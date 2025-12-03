@@ -346,5 +346,11 @@
         {
             "$ref": "#/$defs/transdecoder_options"
         }
-    ]
+    ],
+    "properties": {
+        "fusions": {
+            "type": "boolean",
+            "description": "enable if you have included fusion predictions from CTAT-lr-fusion in the samplesheet"
+        }
+    }
 }

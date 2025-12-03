@@ -13,6 +13,7 @@ workflow FASTA_MERGE_ANNOTATE {
     skip_multisample // boolean determining multi or single sample mode
     swissprot_fasta // swissprot fasta
     ch_samplesheet // channel [ val (meta), bam, fusion_tsv ]
+    run_fusions // flag to include fusions
 
     main:
 
@@ -22,7 +23,7 @@ workflow FASTA_MERGE_ANNOTATE {
     TRANSDECODER2FASTA(ch_orfs)
     ch_versions = ch_versions.mix(TRANSDECODER2FASTA.out.versions.first())
     // multisample workflow with merging
-    if (!skip_multisample) {
+    if (!skip_multisample & run_fusions) {
         // merge fusions if multisample mode has been enabled
         MERGEFUSIONS(samplesheet)
         ch_versions = ch_versions.mix(MERGEFUSIONS.out.versions)
@@ -34,7 +35,7 @@ workflow FASTA_MERGE_ANNOTATE {
                 [meta1, [sp_fasta, novel_proteins, fusions]]
             }
     }
-    else {
+    else if (skip_multisample & run_fusions) {
         fusion_ch = ch_samplesheet.map { meta, _bam, _rcFile, fusion_tsv ->
             tuple(meta, fusion_tsv)
         }
@@ -53,6 +54,14 @@ workflow FASTA_MERGE_ANNOTATE {
             .combine(swissprot_fasta)
             .map { meta1, novel_proteins, fusions, _meta2, sp_fasta ->
                 [meta1, [sp_fasta, novel_proteins, fusions]]
+            }
+    }
+    else {
+        // concatenate transdecoder orfs and swissprot only
+        cat_ch = TRANSDECODER2FASTA.out.fasta
+            .combine(swissprot_fasta)
+            .map { meta1, novel_proteins, _meta2, sp_fasta ->
+                [meta1, [sp_fasta, novel_proteins]]
             }
     }
     // concat fasta files

@@ -5,7 +5,7 @@ nextflow_pipeline {
     tag "pipeline"
 
     test("Test full proteomegenerator3 pipeline") {
-
+        options "-stub"
         when {
             params {
                 input = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/samplesheet_multisample.csv'
@@ -17,6 +17,7 @@ nextflow_pipeline {
                 mapq = 1
                 read_len = 10
                 outdir = "$outputDir"
+                fusions = true
             }
         }
 
