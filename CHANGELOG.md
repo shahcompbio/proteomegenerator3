@@ -3,9 +3,33 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- New `--fusions` flag to control inclusion of fusion predictions in final proteome database
+- Stub test implementations for all local modules (BAMBU_ASSEMBLY, BAMBU_FILTER, BAMBU_READCLASSES, SEMERGE, TRANSDECODER2FASTA, FUSIONFASTA, MERGEFUSIONS)
+- Conditional fusion processing logic that handles samples without fusion data
+
+### Changed
+
+- FASTA_MERGE_ANNOTATE subworkflow now accepts `run_fusions` parameter to conditionally process fusion data
+- Fusion processing is now opt-in via `--fusions` flag rather than automatic when fusion files are present
+- Improved workflow logic to prevent empty channel errors when fusion data is not provided
+- README updated with detailed `--fusions` flag usage examples and requirements
+
+### Fixed
+
+- Empty channel error in FASTA_MERGE_ANNOTATE when fusion files are not provided
+- Pipeline now correctly handles mixed datasets where some samples have fusions and others don't
+
+### Removed
+
+- Deprecated WRITEFASTA module (replaced by TRANSDECODER2FASTA)
+
 ## [1.1.1] - 2025-11-14
 
-## Changed
+### Changed
 
 - `ci.yml` updated with disk cleanup
 

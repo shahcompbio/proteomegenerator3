@@ -106,6 +106,20 @@ nextflow run kentsislab/proteomegenerator3 -r 1.1.0 \
    --skip_multisample
 ```
 
+To include fusion predictions from ctat-lr-fusion in your proteome database, use the `--fusions` flag:
+
+```bash
+nextflow run kentsislab/proteomegenerator3 -r 1.1.0 \
+   -profile <docker/singularity/.../institute> \
+   --input samplesheet.csv \
+   --fasta <REF_GENOME> \
+   --gtf <REF_GTF> \
+   --outdir <OUTDIR> \
+   --fusions
+```
+
+Note that when using `--fusions`, your samplesheet must include the `fusion_tsv` column with paths to ctat-lr-fusion output files. If fusion files are not provided for a sample, the pipeline will automatically skip fusion processing for that sample.
+
 To run with the latest version, which may not be stable you can use the `-r dev -latest` flags:
 
 ```bash
@@ -123,8 +137,9 @@ I have highlighted the following options here:
 7. `recommended_NDR`: run bambu with recommended NDR (as determined by bambu's algorithm)
 8. `skip_multisample`: skip multi-sample transcript merging and process samples individually
 9. `single_best_only`: select only the single best ORF per transcript [default: false]
-10. `uniprot_proteome`: local path to UniProt proteome for (i) BLAST-based ORF validation in Transdecoder subworkflow and (ii) concatenation of the final proteome fasta file.
-11. `UPID`: UniProt proteome ID (UPID) for automated download (if no local path was provided with option #10) [default: UP000005640]
+10. `fusions`: enable processing of fusion predictions from ctat-lr-fusion [default: false]. When enabled, fusion ORFs will be included in the final proteome database. Requires `fusion_tsv` column in samplesheet pointing to ctat-lr-fusion output files.
+11. `uniprot_proteome`: local path to UniProt proteome for (i) BLAST-based ORF validation in Transdecoder subworkflow and (ii) concatenation of the final proteome fasta file.
+12. `UPID`: UniProt proteome ID (UPID) for automated download (if no local path was provided with option #11) [default: UP000005640]
 
 ## Credits
 
