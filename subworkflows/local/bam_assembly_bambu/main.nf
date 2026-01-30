@@ -7,7 +7,7 @@ include { SEMERGE                             } from '../../../modules/local/sem
 include { SEMERGE as SEQUANT_MERGE            } from '../../../modules/local/semerge/main'
 include { BAMBU_FILTER                        } from '../../../modules/local/bambu/filter/main'
 
-workflow ASSEMBLY_QUANT {
+workflow BAM_ASSEMBLY_BAMBU {
     take:
     rc_ch // channel: [val(meta), reads]
     skip_multisample // val

@@ -81,7 +81,7 @@ nextflow run . -profile docker -resume
 2. **workflows/proteomegenerator3.nf**: Main workflow logic
 
    - **PREPROCESS_READS**: Filters BAM files by MAPQ/read length, removes accessory chromosome reads
-   - **ASSEMBLY_QUANT**: Runs Bambu for transcript assembly and quantification
+   - **BAM_ASSEMBLY_BAMBU**: Runs Bambu for transcript assembly and quantification
    - **GFFREAD**: Extracts cDNA sequences from assembled transcripts
    - **CAT_CAT**: Concatenates transcript and fusion FASTA files (when fusions enabled)
    - **PREDICT_ORFS**: Predicts ORFs using Transdecoder
@@ -90,7 +90,7 @@ nextflow run . -profile docker -resume
 3. **Subworkflows** (in `subworkflows/local/`):
 
    - `preprocess_reads/`: Read filtering and quality control
-   - `assembly_quant/`: Transcript assembly with Bambu
+   - `bam_assembly_bambu/`: Transcript assembly with Bambu
    - `predict_orfs/`: ORF prediction with Transdecoder and FASTA formatting
 
 4. **Python Scripts** (in `bin/`):

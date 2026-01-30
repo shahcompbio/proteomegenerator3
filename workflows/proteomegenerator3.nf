@@ -4,7 +4,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 include { PREPROCESS_READS       } from '../subworkflows/local/preprocess_reads/main'
-include { ASSEMBLY_QUANT         } from '../subworkflows/local/assembly_quant/main'
+include { BAM_ASSEMBLY_BAMBU     } from '../subworkflows/local/bam_assembly_bambu/main'
 include { GFFREAD                } from '../modules/nf-core/gffread/main'
 include { CAT_CAT                } from '../modules/nf-core/cat/cat/main'
 include { PREDICT_ORFS           } from '../subworkflows/local/predict_orfs/main'
@@ -64,7 +64,7 @@ workflow PROTEOMEGENERATOR3 {
     // count samples to make sure multisample isn't run on single samples
     sample_count = countSamples(params.input)
     // run assembly and quant with bambu
-    ASSEMBLY_QUANT(
+    BAM_ASSEMBLY_BAMBU(
         rc_ch,
         params.skip_multisample,
         sample_count,
@@ -72,17 +72,17 @@ workflow PROTEOMEGENERATOR3 {
         ref_gtf_ch,
         bam_ch,
     )
-    ch_versions = ch_versions.mix(ASSEMBLY_QUANT.out.versions)
+    ch_versions = ch_versions.mix(BAM_ASSEMBLY_BAMBU.out.versions)
     // extract cDNA
     ch_fasta = Channel.empty()
-    GFFREAD(ASSEMBLY_QUANT.out.gtf, params.fasta)
+    GFFREAD(BAM_ASSEMBLY_BAMBU.out.gtf, params.fasta)
     ch_versions = ch_versions.mix(GFFREAD.out.versions)
     // predict ORFs with transdecoder and output fasta for msfragger
     PREDICT_ORFS(GFFREAD.out.gffread_fasta, params.uniprot_proteome)
     ch_versions = ch_versions.mix(PREDICT_ORFS.out.versions)
     // make uniprot-style fasta for msfragger and create index tables
     ch_orfs = PREDICT_ORFS.out.ORFs
-        .join(ASSEMBLY_QUANT.out.gtf, by: 0)
+        .join(BAM_ASSEMBLY_BAMBU.out.gtf, by: 0)
         .combine(PREDICT_ORFS.out.swissprot.map { _meta, fasta -> fasta })
     FASTA_MERGE_ANNOTATE(
         ch_orfs,
