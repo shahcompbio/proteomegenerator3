@@ -9,10 +9,10 @@ include { FUSIONFASTA        } from '../../../modules/local/fusionfasta/main.nf'
 workflow FASTA_MERGE_ANNOTATE {
     take:
     ch_orfs // channel: [ val(meta), [ transdecoder_peps, gtf, swissprot_fasta ] ]
-    samplesheet // samplesheet
+    samplesheet // samplesheet path for multi-sample fusion merging
     skip_multisample // boolean determining multi or single sample mode
     swissprot_fasta // swissprot fasta
-    ch_samplesheet // channel [ val (meta), bam, fusion_tsv ]
+    ch_fusion_tsvs // channel [ val(meta), path(fusion_tsv) ] - pre-filtered fusion entries
     run_fusions // flag to include fusions
 
     main:
@@ -36,10 +36,8 @@ workflow FASTA_MERGE_ANNOTATE {
             }
     }
     else if (skip_multisample & run_fusions) {
-        fusion_ch = ch_samplesheet.map { meta, _bam, _rcFile, fusion_tsv ->
-            tuple(meta, fusion_tsv)
-        }
-        FUSIONFASTA(fusion_ch)
+        // ch_fusion_tsvs is already in the format [meta, fusion_tsv]
+        FUSIONFASTA(ch_fusion_tsvs)
         // concatenate fusions, non-canonical proteins, and swissprot
         // this time one item per sample
         // TRANSDECODER2FASTA.out.fasta.view()

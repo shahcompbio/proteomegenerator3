@@ -156,19 +156,37 @@ When `--fusions` is enabled, the workflow:
 
 **ORF Prediction**:
 
-- `--fusions`: Include fusion contigs from JAFFAL (default: false)
+- `--fusions`: Include fusion predictions from ctat-lr-fusion (default: false)
+- `--short_reads`: Enable short-read RNA-seq assembly and quantification (default: false)
 - `--multiple_orfs`: Allow multiple ORFs per transcript (beta, default: false)
 
 ## Input Format
 
-Samplesheet CSV with columns:
+Samplesheet CSV with long-format (one row per file):
 
-- `sample`: Sample name
-- `bam`: Aligned, sorted long-read RNA-seq BAM
-- `bai`: BAM index file
-- `rcFile`: Optional pre-computed Bambu read class file
-- `jaffal_fasta`: Optional fusion contigs from JAFFAL
-- `jaffal_table`: Optional fusion metadata from JAFFAL
+| Column          | Required | Values                              | Description       |
+| --------------- | -------- | ----------------------------------- | ----------------- |
+| `sample`        | Yes      | String (no spaces)                  | Sample identifier |
+| `sequence_type` | Yes      | `long_read`, `short_read`, `fusion` | Data modality     |
+| `filetype`      | Yes      | `bam`, `rc_file`, `tsv`             | File format       |
+| `filepath`      | Yes      | File path                           | Path to the file  |
+
+**Example:**
+
+```csv
+sample,sequence_type,filetype,filepath
+SAMPLE1,long_read,bam,/path/to/sample1.bam
+SAMPLE1,long_read,rc_file,/path/to/sample1.rds
+SAMPLE1,fusion,tsv,/path/to/sample1_fusions.tsv
+SAMPLE2,long_read,bam,/path/to/sample2.bam
+```
+
+**Validation Rules:**
+
+- Every sample MUST have at least one `long_read` + `bam` entry
+- `rc_file` filetype only valid with `sequence_type: long_read`
+- `fusion` entries only processed when `--fusions` flag is enabled
+- `short_read` entries only processed when `--short_reads` flag is enabled
 
 ## Output Structure
 

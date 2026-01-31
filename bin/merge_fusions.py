@@ -8,12 +8,17 @@ Merge fusion calls across multiple samples based on gene symbols and breakpoints
 samplesheet = sys.argv[1] # samplesheet for pipeline
 fusion_info_path = sys.argv[2]
 output_fasta = sys.argv[3]
-# read in metadata
+# read in metadata (long-format samplesheet)
 metadata = pd.read_csv(samplesheet)
+# filter for fusion TSV entries only
+fusion_rows = metadata[
+    (metadata['sequence_type'] == 'fusion') &
+    (metadata['filetype'] == 'tsv')
+]
 # make a dataframe of fusions
 fusion_df = pd.DataFrame()
-for _, row in metadata.iterrows():
-    lrfusiondat = pd.read_csv(row["fusion_tsv"], sep="\t")
+for _, row in fusion_rows.iterrows():
+    lrfusiondat = pd.read_csv(row["filepath"], sep="\t")
     lrfusiondat["sample"] = row["sample"]
     fusion_df = pd.concat([fusion_df, lrfusiondat])
 # drop all fusions with CDS

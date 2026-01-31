@@ -14,6 +14,10 @@ include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getLongReadBams       } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getLongReadRcFiles    } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getShortReadBams      } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getFusionTsvs         } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -29,18 +33,33 @@ workflow PROTEOMEGENERATOR3 {
     ch_versions = Channel.empty()
     ch_multiqc_files = Channel.empty()
     //
+    // Extract typed channels from long-format samplesheet
+    //
+    ch_long_read_bams  = getLongReadBams(ch_samplesheet)
+    ch_long_read_rc    = getLongReadRcFiles(ch_samplesheet)
+    ch_short_read_bams = getShortReadBams(ch_samplesheet)
+    ch_fusion_tsvs     = getFusionTsvs(ch_samplesheet)
+
+    //
     // MODULE: Run samtools view to filter bam files for reads aligned to accessory chromosomes
     //
     if (!params.skip_preprocessing) {
-        input_ch = ch_samplesheet.map { meta, bam, _rds, _fusion_tsv -> tuple(meta, bam) }
-        PREPROCESS_READS(input_ch, params.filter_reads, params.filter_acc_reads)
+        PREPROCESS_READS(ch_long_read_bams, params.filter_reads, params.filter_acc_reads)
         rc_ch = PREPROCESS_READS.out.reads
         bam_ch = PREPROCESS_READS.out.bam
         ch_versions = ch_versions.mix(PREPROCESS_READS.out.versions)
     }
     else {
-        rc_ch = ch_samplesheet.map { meta, _bam, rds, _fusion_tsv -> tuple(meta, rds) }
-        bam_ch = ch_samplesheet.map { meta, bam, _rds, _fusion_tsv -> tuple(meta, bam) }
+        // Use provided rc_files when skipping preprocessing
+        rc_ch = ch_long_read_rc
+        bam_ch = ch_long_read_bams
+    }
+
+    // Short-read quantification (placeholder for future implementation)
+    if (params.short_reads) {
+        // TODO: Implement short-read quantification subworkflow
+        // SHORT_READ_QUANT(ch_short_read_bams, ...)
+        log.info "Short-read BAMs detected but short-read quantification not yet implemented"
     }
     // perform assembly & quantification with bambu
     // make an NDR channel
@@ -89,7 +108,7 @@ workflow PROTEOMEGENERATOR3 {
         params.input,
         params.skip_multisample,
         PREDICT_ORFS.out.swissprot,
-        ch_samplesheet,
+        ch_fusion_tsvs,
         params.fusions,
     )
     ch_versions = ch_versions.mix(FASTA_MERGE_ANNOTATE.out.versions)
@@ -163,7 +182,15 @@ workflow PROTEOMEGENERATOR3 {
 
 def countSamples(input) {
     def lines = file(input).readLines()
-    def sample_count = lines.size() - 1
+    def header = lines[0].split(',')
+    def sampleIdx = header.findIndexOf { it == 'sample' }
+
+    // Get unique sample names (excluding header) for long-format samplesheet
+    def samples = lines[1..-1]
+        .collect { it.split(',')[sampleIdx] }
+        .unique()
+
+    def sample_count = samples.size()
     if (sample_count == 1) {
         println("1 sample detected; switching to single sample mode")
     }

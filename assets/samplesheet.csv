@@ -1,2 +1,2 @@
-sample,bam,bai,rcFile,jaffal_fasta,jaffal_table
-A549,https://raw.githubusercontent.com/apsteinberg/test-datasets/proteomegenerator3/bam/SGNex_A549_directRNA_replicate5_run1_chr9_1_1000000.bam,https://raw.githubusercontent.com/apsteinberg/test-datasets/proteomegenerator3/bam/SGNex_A549_directRNA_replicate5_run1_chr9_1_1000000.bam.bai,,https://raw.githubusercontent.com/apsteinberg/test-datasets/proteomegenerator3/fusions/jaffa_results_ews_fli1.fasta,https://raw.githubusercontent.com/apsteinberg/test-datasets/proteomegenerator3/fusions/jaffa_results_ews_fli1.csv
+sample,sequence_type,filetype,filepath
+A549,long_read,bam,https://raw.githubusercontent.com/apsteinberg/test-datasets/proteomegenerator3/bam/SGNex_A549_directRNA_replicate5_run1_chr9_1_1000000.bam

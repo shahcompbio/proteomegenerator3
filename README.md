@@ -41,16 +41,28 @@ First, prepare a samplesheet with your input data that looks as follows:
 `samplesheet.csv`:
 
 ```csv
-sample,bam,rcFile,fusion_tsv
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.bam,,fusion_predictions.tsv
+sample,sequence_type,filetype,filepath
+SAMPLE1,long_read,bam,/path/to/sample1.bam
+SAMPLE1,long_read,rc_file,/path/to/sample1.rds
+SAMPLE1,fusion,tsv,/path/to/sample1_fusions.tsv
+SAMPLE2,long_read,bam,/path/to/sample2.bam
 ```
 
-Each row represents a long-read RNAseq sample. The columns are as follows:
+Each row represents a single file associated with a sample. The columns are as follows:
 
-1. `sample`: Sample name (required)
-2. `bam`: Aligned, sorted long-read RNAseq BAM file (required)
-3. `rcFile`: Optional Bambu read class file (.rds) from previous runs; use with `--skip_preprocessing` flag to speed up runtime and re-analyze previous samples
-4. `fusion_tsv`: Optional fusion predictions TSV file from ctat-lr-fusion
+| Column          | Required | Values                              | Description       |
+| --------------- | -------- | ----------------------------------- | ----------------- |
+| `sample`        | Yes      | String (no spaces)                  | Sample identifier |
+| `sequence_type` | Yes      | `long_read`, `short_read`, `fusion` | Data modality     |
+| `filetype`      | Yes      | `bam`, `rc_file`, `tsv`             | File format       |
+| `filepath`      | Yes      | File path                           | Path to the file  |
+
+**Requirements:**
+
+- Every sample MUST have at least one `long_read` + `bam` entry
+- `rc_file` entries are optional; use with `--skip_preprocessing` flag to speed up runtime by reusing Bambu read classes from previous runs
+- `fusion` entries require the `--fusions` flag to be processed
+- `short_read` entries require the `--short_reads` flag (short-read quantification coming soon)
 
 To produce the necessary files, we recommend using the [nf-core/nanoseq](https://nf-co.re/nanoseq/3.1.0/) pipeline for alignment, or [ctat-lr-fusion](https://github.com/TrinityCTAT/CTAT-LR-fusion) for fusion calling.
 
@@ -59,7 +71,7 @@ Now, you can run the pipeline using:
 <!-- TODO nf-core: update the following command to include all required parameters for a minimal example -->
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.1.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.2.0 \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --fasta <REF_GENOME> \
@@ -77,13 +89,13 @@ Where `REF_GENOME` and `REF_GTF` are the reference genome and transcriptome resp
 To see all optional parameters that could be used with the pipeline and their explanations, use the help menu:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.1.0 --help
+nextflow run kentsislab/proteomegenerator3 -r 1.2.0 --help
 ```
 
 This options can be run using flags. For example:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.1.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.2.0 \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --fasta <REF_GENOME> \
@@ -97,7 +109,7 @@ Will pre-filter the bam file before transcript assembly is performed on mapq and
 As another example, you can skip multi-sample transcript merging and process each sample independently:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.1.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.2.0 \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --fasta <REF_GENOME> \
@@ -109,7 +121,7 @@ nextflow run kentsislab/proteomegenerator3 -r 1.1.0 \
 To include fusion predictions from ctat-lr-fusion in your proteome database, use the `--fusions` flag:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.1.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.2.0 \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --fasta <REF_GENOME> \
@@ -118,7 +130,7 @@ nextflow run kentsislab/proteomegenerator3 -r 1.1.0 \
    --fusions
 ```
 
-Note that when using `--fusions`, your samplesheet must include the `fusion_tsv` column with paths to ctat-lr-fusion output files. If fusion files are not provided for a sample, the pipeline will automatically skip fusion processing for that sample.
+Note that when using `--fusions`, your samplesheet must include `fusion` + `tsv` entries with paths to ctat-lr-fusion output files. If fusion files are not provided for a sample, the pipeline will automatically skip fusion processing for that sample.
 
 To run with the latest version, which may not be stable you can use the `-r dev -latest` flags:
 
@@ -137,9 +149,10 @@ I have highlighted the following options here:
 7. `recommended_NDR`: run bambu with recommended NDR (as determined by bambu's algorithm)
 8. `skip_multisample`: skip multi-sample transcript merging and process samples individually
 9. `single_best_only`: select only the single best ORF per transcript [default: false]
-10. `fusions`: enable processing of fusion predictions from ctat-lr-fusion [default: false]. When enabled, fusion ORFs will be included in the final proteome database. Requires `fusion_tsv` column in samplesheet pointing to ctat-lr-fusion output files.
-11. `uniprot_proteome`: local path to UniProt proteome for (i) BLAST-based ORF validation in Transdecoder subworkflow and (ii) concatenation of the final proteome fasta file.
-12. `UPID`: UniProt proteome ID (UPID) for automated download (if no local path was provided with option #11) [default: UP000005640]
+10. `fusions`: enable processing of fusion predictions from ctat-lr-fusion [default: false]. When enabled, fusion ORFs will be included in the final proteome database. Requires `fusion` + `tsv` entries in samplesheet pointing to ctat-lr-fusion output files.
+11. `short_reads`: enable short-read RNA-seq assembly and quantification [default: false]. Requires `short_read` + `bam` entries in samplesheet. (Coming soon)
+12. `uniprot_proteome`: local path to UniProt proteome for (i) BLAST-based ORF validation in Transdecoder subworkflow and (ii) concatenation of the final proteome fasta file.
+13. `UPID`: UniProt proteome ID (UPID) for automated download (if no local path was provided with option #12) [default: UP000005640]
 
 ## Credits
 
