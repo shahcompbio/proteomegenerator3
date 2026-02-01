@@ -80,6 +80,7 @@ workflow PROTEOMEGENERATOR3 {
         bam_ch,
     )
     ch_versions = ch_versions.mix(BAM_ASSEMBLY_BAMBU.out.versions)
+    assembly_ch = BAM_ASSEMBLY_BAMBU.out.gtf
     //
     // process short-read rnaseq data (if provided)
     //
@@ -92,17 +93,22 @@ workflow PROTEOMEGENERATOR3 {
             sample_count,
         )
         ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE.out.versions)
+        // combine bambu and stringtie assemblies
+        bambu_ch = BAM_ASSEMBLY_BAMBU.out.gtf.map { meta, gtf -> [meta + [tool: 'bambu'], gtf] }
+        stringtie_ch = BAM_ASSEMBLY_STRINGTIE.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie'], gtf] }
+        assembly_ch = bambu_ch.mix(stringtie_ch)
     }
     // extract cDNA
-    GFFREAD(BAM_ASSEMBLY_BAMBU.out.gtf, params.fasta)
+    GFFREAD(assembly_ch, params.fasta)
     ch_versions = ch_versions.mix(GFFREAD.out.versions)
     // predict ORFs with transdecoder and output fasta for msfragger
     PREDICT_ORFS(GFFREAD.out.gffread_fasta, params.uniprot_proteome)
     ch_versions = ch_versions.mix(PREDICT_ORFS.out.versions)
     // make uniprot-style fasta for msfragger and create index tables
     ch_orfs = PREDICT_ORFS.out.ORFs
-        .join(BAM_ASSEMBLY_BAMBU.out.gtf, by: 0)
+        .join(assembly_ch, by: 0)
         .combine(PREDICT_ORFS.out.swissprot.map { _meta, fasta -> fasta })
+    // ch_orfs.view { v -> "ch_orfs: ${v}" }
     FASTA_MERGE_ANNOTATE(
         ch_orfs,
         params.input,
@@ -110,6 +116,7 @@ workflow PROTEOMEGENERATOR3 {
         PREDICT_ORFS.out.swissprot,
         ch_fusion_tsvs,
         params.fusions,
+        params.short_reads,
     )
     ch_versions = ch_versions.mix(FASTA_MERGE_ANNOTATE.out.versions)
     // collect versions
