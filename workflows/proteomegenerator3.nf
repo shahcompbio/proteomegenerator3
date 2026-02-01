@@ -9,15 +9,16 @@ include { GFFREAD                } from '../modules/nf-core/gffread/main'
 include { CAT_CAT                } from '../modules/nf-core/cat/cat/main'
 include { PREDICT_ORFS           } from '../subworkflows/local/predict_orfs/main'
 include { FASTA_MERGE_ANNOTATE   } from '../subworkflows/local/fasta_merge_annotate/main'
+include { BAM_ASSEMBLY_STRINGTIE } from '../subworkflows/local/bam_assembly_stringtie/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
-include { getLongReadBams       } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
-include { getLongReadRcFiles    } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
-include { getShortReadBams      } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
-include { getFusionTsvs         } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getLongReadBams        } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getLongReadRcFiles     } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getShortReadBams       } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getFusionTsvs          } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -35,13 +36,13 @@ workflow PROTEOMEGENERATOR3 {
     //
     // Extract typed channels from long-format samplesheet
     //
-    ch_long_read_bams  = getLongReadBams(ch_samplesheet)
-    ch_long_read_rc    = getLongReadRcFiles(ch_samplesheet)
+    ch_long_read_bams = getLongReadBams(ch_samplesheet)
+    ch_long_read_rc = getLongReadRcFiles(ch_samplesheet)
     ch_short_read_bams = getShortReadBams(ch_samplesheet)
-    ch_fusion_tsvs     = getFusionTsvs(ch_samplesheet)
+    ch_fusion_tsvs = getFusionTsvs(ch_samplesheet)
 
     //
-    // MODULE: Run samtools view to filter bam files for reads aligned to accessory chromosomes
+    // process long-read rnaseq data
     //
     if (!params.skip_preprocessing) {
         PREPROCESS_READS(ch_long_read_bams, params.filter_reads, params.filter_acc_reads)
@@ -54,13 +55,6 @@ workflow PROTEOMEGENERATOR3 {
         rc_ch = ch_long_read_rc
         bam_ch = ch_long_read_bams
     }
-
-    // Short-read quantification (placeholder for future implementation)
-    if (params.short_reads) {
-        // TODO: Implement short-read quantification subworkflow
-        // SHORT_READ_QUANT(ch_short_read_bams, ...)
-        log.info "Short-read BAMs detected but short-read quantification not yet implemented"
-    }
     // perform assembly & quantification with bambu
     // make an NDR channel
     if (params.recommended_NDR && params.NDR != null) {
@@ -71,12 +65,6 @@ workflow PROTEOMEGENERATOR3 {
     }
     else {
         ch_NDR = channel.of(params.NDR)
-    }
-    // add NDR to metamap
-    def NDRmetamap = { meta, rds, NDR ->
-        def new_meta = meta.clone()
-        new_meta.NDR = NDR
-        return [new_meta, rds]
     }
     ref_gtf_ch = channel.of(params.gtf)
     // run sample assembly & quant with read classes
@@ -92,8 +80,19 @@ workflow PROTEOMEGENERATOR3 {
         bam_ch,
     )
     ch_versions = ch_versions.mix(BAM_ASSEMBLY_BAMBU.out.versions)
+    //
+    // process short-read rnaseq data (if provided)
+    //
+    if (params.short_reads) {
+        // TODO: Implement short-read quantification subworkflow
+        BAM_ASSEMBLY_STRINGTIE(
+            ch_short_read_bams,
+            params.gtf,
+        )
+        ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE.out.versions)
+        log.info("Short-read BAMs detected but short-read quantification not yet implemented")
+    }
     // extract cDNA
-    ch_fasta = Channel.empty()
     GFFREAD(BAM_ASSEMBLY_BAMBU.out.gtf, params.fasta)
     ch_versions = ch_versions.mix(GFFREAD.out.versions)
     // predict ORFs with transdecoder and output fasta for msfragger
