@@ -7,26 +7,37 @@ workflow BAM_ASSEMBLY_STRINGTIE {
     take:
     ch_bam // channel: [ val(meta), [ bam ] ]
     ref_gtf
+    skip_multisample // val
+    sample_count // val
 
     main:
     ch_versions = channel.empty()
+    stringtie_out_ch = channel.empty()
     STRINGTIE_STRINGTIE(
         ch_bam,
         ref_gtf,
     )
     ch_versions = ch_versions.mix(STRINGTIE_STRINGTIE.out.versions)
-    // STRINGTIE_STRINGTIE.out.transcript_gtf.view()
-    merge_ch = STRINGTIE_STRINGTIE.out.transcript_gtf.collect { _meta, gtf -> gtf }
-    // merge assembled transcripts across samples
-    STRINGTIE_MERGE(
-        merge_ch,
-        ref_gtf,
-    )
-    ch_versions = ch_versions.mix(STRINGTIE_MERGE.out.versions)
+    if (skip_multisample || sample_count == 1) {
+        stringtie_out_ch = stringtie_out_ch.mix(STRINGTIE_STRINGTIE.out.transcript_gtf)
+    }
+    else {
+
+        // STRINGTIE_STRINGTIE.out.transcript_gtf.view()
+        merge_ch = STRINGTIE_STRINGTIE.out.transcript_gtf.collect { _meta, gtf -> gtf }
+        // merge assembled transcripts across samples
+        STRINGTIE_MERGE(
+            merge_ch,
+            [],
+        )
+        ch_versions = ch_versions.mix(STRINGTIE_MERGE.out.versions)
+        stringtie_out_ch = stringtie_out_ch.mix(
+            STRINGTIE_MERGE.out.gtf.map { gtf -> [[id: "merge"], gtf] }
+        )
+    }
     // run gffcompare to determine which transcripts are non-canonical
-    // STRINGTIE_MERGE.out.gtf.view()
     GFFCOMPARE(
-        STRINGTIE_MERGE.out.gtf.map { gtf -> [[id: "merge"], gtf] },
+        stringtie_out_ch,
         [[], [], []],
         [[id: "ref"], ref_gtf],
     )
@@ -37,4 +48,5 @@ workflow BAM_ASSEMBLY_STRINGTIE {
 
     emit:
     versions = ch_versions
+    gtf      = REANNOTATESTRINGTIE.out.gtf
 }

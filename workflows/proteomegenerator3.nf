@@ -88,9 +88,10 @@ workflow PROTEOMEGENERATOR3 {
         BAM_ASSEMBLY_STRINGTIE(
             ch_short_read_bams,
             params.gtf,
+            params.skip_multisample,
+            sample_count,
         )
         ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE.out.versions)
-        log.info("Short-read BAMs detected but short-read quantification not yet implemented")
     }
     // extract cDNA
     GFFREAD(BAM_ASSEMBLY_BAMBU.out.gtf, params.fasta)
