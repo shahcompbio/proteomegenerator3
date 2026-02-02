@@ -7,21 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Short-read RNA-seq support via StringTie integration
+  - New `--short_reads` flag to enable short-read transcript assembly and quantification
+  - StringTie-based assembly runs in parallel with Bambu for long-read data
+  - Short-read and long-read ORF predictions are merged into unified proteome database
+- Local seqkit_rmdup module with additional outputs for duplicate sequence tracking (`-D` and `-d` flags)
 - New `--fusions` flag to control inclusion of fusion predictions in final proteome database
 - Stub test implementations for all local modules (BAMBU_ASSEMBLY, BAMBU_FILTER, BAMBU_READCLASSES, SEMERGE, TRANSDECODER2FASTA, FUSIONFASTA, MERGEFUSIONS)
 - Conditional fusion processing logic that handles samples without fusion data
 
 ### Changed
 
+- FASTA_MERGE_ANNOTATE subworkflow now handles both bambu and stringtie outputs
+  - Branching logic to separate outputs by tool type
+  - CAT_CAT_SAMPLES process to merge bambu and stringtie fastas per sample
+  - Updated publishDir configuration for proper routing of outputs to NDR directories
 - FASTA_MERGE_ANNOTATE subworkflow now accepts `run_fusions` parameter to conditionally process fusion data
 - Fusion processing is now opt-in via `--fusions` flag rather than automatic when fusion files are present
 - Improved workflow logic to prevent empty channel errors when fusion data is not provided
+- Moved seqkit/rmdup to local modules to support custom duplicate tracking outputs
 - README updated with detailed `--fusions` flag usage examples and requirements
 
 ### Fixed
 
 - Empty channel error in FASTA_MERGE_ANNOTATE when fusion files are not provided
 - Pipeline now correctly handles mixed datasets where some samples have fusions and others don't
+- Proper publishing of stringtie outputs to appropriate NDR directories (using params.NDR fallback)
 
 ### Removed
 

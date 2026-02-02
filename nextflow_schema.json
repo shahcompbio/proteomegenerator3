@@ -351,6 +351,10 @@
         "fusions": {
             "type": "boolean",
             "description": "enable if you have included fusion predictions from CTAT-lr-fusion in the samplesheet"
+        },
+        "short_reads": {
+            "type": "boolean",
+            "description": "enable short-read RNA-seq quantification (requires short_read BAM entries in samplesheet)"
         }
     }
 }

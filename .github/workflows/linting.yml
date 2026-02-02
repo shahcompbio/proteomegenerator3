@@ -4,9 +4,8 @@ name: nf-core linting
 # that the code meets the nf-core guidelines.
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
-    branches: [main]
 
 jobs:
   pre-commit:

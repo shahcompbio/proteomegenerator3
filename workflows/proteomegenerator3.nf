@@ -4,16 +4,21 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 include { PREPROCESS_READS       } from '../subworkflows/local/preprocess_reads/main'
-include { ASSEMBLY_QUANT         } from '../subworkflows/local/assembly_quant/main'
+include { BAM_ASSEMBLY_BAMBU     } from '../subworkflows/local/bam_assembly_bambu/main'
 include { GFFREAD                } from '../modules/nf-core/gffread/main'
 include { CAT_CAT                } from '../modules/nf-core/cat/cat/main'
 include { PREDICT_ORFS           } from '../subworkflows/local/predict_orfs/main'
 include { FASTA_MERGE_ANNOTATE   } from '../subworkflows/local/fasta_merge_annotate/main'
+include { BAM_ASSEMBLY_STRINGTIE } from '../subworkflows/local/bam_assembly_stringtie/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getLongReadBams        } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getLongReadRcFiles     } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getShortReadBams       } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getFusionTsvs          } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -29,18 +34,26 @@ workflow PROTEOMEGENERATOR3 {
     ch_versions = Channel.empty()
     ch_multiqc_files = Channel.empty()
     //
-    // MODULE: Run samtools view to filter bam files for reads aligned to accessory chromosomes
+    // Extract typed channels from long-format samplesheet
+    //
+    ch_long_read_bams = getLongReadBams(ch_samplesheet)
+    ch_long_read_rc = getLongReadRcFiles(ch_samplesheet)
+    ch_short_read_bams = getShortReadBams(ch_samplesheet)
+    ch_fusion_tsvs = getFusionTsvs(ch_samplesheet)
+
+    //
+    // process long-read rnaseq data
     //
     if (!params.skip_preprocessing) {
-        input_ch = ch_samplesheet.map { meta, bam, _rds, _fusion_tsv -> tuple(meta, bam) }
-        PREPROCESS_READS(input_ch, params.filter_reads, params.filter_acc_reads)
+        PREPROCESS_READS(ch_long_read_bams, params.filter_reads, params.filter_acc_reads)
         rc_ch = PREPROCESS_READS.out.reads
         bam_ch = PREPROCESS_READS.out.bam
         ch_versions = ch_versions.mix(PREPROCESS_READS.out.versions)
     }
     else {
-        rc_ch = ch_samplesheet.map { meta, _bam, rds, _fusion_tsv -> tuple(meta, rds) }
-        bam_ch = ch_samplesheet.map { meta, bam, _rds, _fusion_tsv -> tuple(meta, bam) }
+        // Use provided rc_files when skipping preprocessing
+        rc_ch = ch_long_read_rc
+        bam_ch = ch_long_read_bams
     }
     // perform assembly & quantification with bambu
     // make an NDR channel
@@ -53,18 +66,12 @@ workflow PROTEOMEGENERATOR3 {
     else {
         ch_NDR = channel.of(params.NDR)
     }
-    // add NDR to metamap
-    def NDRmetamap = { meta, rds, NDR ->
-        def new_meta = meta.clone()
-        new_meta.NDR = NDR
-        return [new_meta, rds]
-    }
     ref_gtf_ch = channel.of(params.gtf)
     // run sample assembly & quant with read classes
     // count samples to make sure multisample isn't run on single samples
     sample_count = countSamples(params.input)
     // run assembly and quant with bambu
-    ASSEMBLY_QUANT(
+    BAM_ASSEMBLY_BAMBU(
         rc_ch,
         params.skip_multisample,
         sample_count,
@@ -72,25 +79,44 @@ workflow PROTEOMEGENERATOR3 {
         ref_gtf_ch,
         bam_ch,
     )
-    ch_versions = ch_versions.mix(ASSEMBLY_QUANT.out.versions)
+    ch_versions = ch_versions.mix(BAM_ASSEMBLY_BAMBU.out.versions)
+    assembly_ch = BAM_ASSEMBLY_BAMBU.out.gtf
+    //
+    // process short-read rnaseq data (if provided)
+    //
+    if (params.short_reads) {
+        // TODO: Implement short-read quantification subworkflow
+        BAM_ASSEMBLY_STRINGTIE(
+            ch_short_read_bams,
+            params.gtf,
+            params.skip_multisample,
+            sample_count,
+        )
+        ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE.out.versions)
+        // combine bambu and stringtie assemblies
+        bambu_ch = BAM_ASSEMBLY_BAMBU.out.gtf.map { meta, gtf -> [meta + [tool: 'bambu'], gtf] }
+        stringtie_ch = BAM_ASSEMBLY_STRINGTIE.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie'], gtf] }
+        assembly_ch = bambu_ch.mix(stringtie_ch)
+    }
     // extract cDNA
-    ch_fasta = Channel.empty()
-    GFFREAD(ASSEMBLY_QUANT.out.gtf, params.fasta)
+    GFFREAD(assembly_ch, params.fasta)
     ch_versions = ch_versions.mix(GFFREAD.out.versions)
     // predict ORFs with transdecoder and output fasta for msfragger
     PREDICT_ORFS(GFFREAD.out.gffread_fasta, params.uniprot_proteome)
     ch_versions = ch_versions.mix(PREDICT_ORFS.out.versions)
     // make uniprot-style fasta for msfragger and create index tables
     ch_orfs = PREDICT_ORFS.out.ORFs
-        .join(ASSEMBLY_QUANT.out.gtf, by: 0)
+        .join(assembly_ch, by: 0)
         .combine(PREDICT_ORFS.out.swissprot.map { _meta, fasta -> fasta })
+    // ch_orfs.view { v -> "ch_orfs: ${v}" }
     FASTA_MERGE_ANNOTATE(
         ch_orfs,
         params.input,
         params.skip_multisample,
         PREDICT_ORFS.out.swissprot,
-        ch_samplesheet,
+        ch_fusion_tsvs,
         params.fusions,
+        params.short_reads,
     )
     ch_versions = ch_versions.mix(FASTA_MERGE_ANNOTATE.out.versions)
     // collect versions
@@ -163,7 +189,15 @@ workflow PROTEOMEGENERATOR3 {
 
 def countSamples(input) {
     def lines = file(input).readLines()
-    def sample_count = lines.size() - 1
+    def header = lines[0].split(',')
+    def sampleIdx = header.findIndexOf { it == 'sample' }
+
+    // Get unique sample names (excluding header) for long-format samplesheet
+    def samples = lines[1..-1]
+        .collect { it.split(',')[sampleIdx] }
+        .unique()
+
+    def sample_count = samples.size()
     if (sample_count == 1) {
         println("1 sample detected; switching to single sample mode")
     }

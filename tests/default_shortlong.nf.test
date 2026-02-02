@@ -1,0 +1,29 @@
+nextflow_pipeline {
+
+    name "Test pipeline"
+    script "../main.nf"
+    tag "pipeline"
+
+    test("Test pipeline with short-read data") {
+        options "-stub"
+        when {
+            params {
+                input = 'https://github.com/apsteinberg/test-datasets/raw/refs/heads/proteomegenerator3/samplesheet_short+longread_multisample.csv'
+                // Genome references
+                fasta = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/reference/Homo_sapiens.GRCh38.dna_sm.primary_assembly_chr9_1_1000000.fa'
+                gtf = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/reference/Homo_sapiens.GRCh38.91_chr9_1_1000000.gtf'
+                filter_reads = true
+                // to check filtering is working
+                mapq = 1
+                read_len = 10
+                outdir = "$outputDir"
+                fusions = true
+                short_reads = true
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}
