@@ -23,7 +23,7 @@ workflow FASTA_MERGE_ANNOTATE {
 
     // uniprot-style fasta and index table for transdecoder orfs
     TRANSDECODER2FASTA(ch_orfs)
-    TRANSDECODER2FASTA.out.fasta.view { v -> "Transdecoder fasta channel: ${v}" }
+    // TRANSDECODER2FASTA.out.fasta.view { v -> "Transdecoder fasta channel: ${v}" }
     if (short_reads) {
         TRANSDECODER2FASTA.out.fasta
             .branch { meta, _fasta ->
@@ -58,7 +58,6 @@ workflow FASTA_MERGE_ANNOTATE {
             .map { meta1, novel_proteins, fusions, _meta2, sp_fasta ->
                 [meta1, [sp_fasta, novel_proteins, fusions]]
             }
-        cat_ch.view { v -> "CAT channel: ${v}" }
     }
     else if (skip_multisample & run_fusions) {
         // ch_fusion_tsvs is already in the format [meta, fusion_tsv]
