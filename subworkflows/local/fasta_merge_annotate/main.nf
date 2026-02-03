@@ -69,7 +69,10 @@ workflow FASTA_MERGE_ANNOTATE {
             .map { meta, fasta ->
                 [[id: meta.id], meta, fasta]
             }
-            .combine(FUSIONFASTA.out.fasta, by: 0)
+            .combine(
+                FUSIONFASTA.out.fasta.map { meta, fasta -> [[id: meta.id], fasta] },
+                by: 0
+            )
             .map { _meta1, meta2, novel_proteins, fusions ->
                 tuple(meta2, novel_proteins, fusions)
             }

@@ -64,10 +64,10 @@ workflow BAM_ASSEMBLY_BAMBU {
         BAMBU_MERGE_QUANT(merge_quant_ch, params.yieldsize, params.fasta)
         ch_versions = ch_versions.mix(BAMBU_MERGE_QUANT.out.versions)
         // collect all summarized experiments for each NDR
+        // use minimal meta with only id and NDR to ensure all samples are grouped together
         se_ch = BAMBU_MERGE_QUANT.out.se
             .map { meta, se ->
-                def fmeta = meta.clone()
-                fmeta.id = "merge"
+                def fmeta = [id: "merge", NDR: meta.NDR]
                 return [fmeta, se]
             }
             .groupTuple(by: 0)
