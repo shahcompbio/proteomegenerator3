@@ -1,2 +1,2 @@
-sample,sequence_type,filetype,filepath
-A549,long_read,bam,https://raw.githubusercontent.com/apsteinberg/test-datasets/proteomegenerator3/bam/SGNex_A549_directRNA_replicate5_run1_chr9_1_1000000.bam
+subject_id,sample_id,sequence_type,filetype,filepath
+A549,A549,long_read,bam,https://raw.githubusercontent.com/apsteinberg/test-datasets/proteomegenerator3/bam/SGNex_A549_directRNA_replicate5_run1_chr9_1_1000000.bam

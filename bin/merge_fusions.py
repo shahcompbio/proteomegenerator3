@@ -19,7 +19,7 @@ fusion_rows = metadata[
 fusion_df = pd.DataFrame()
 for _, row in fusion_rows.iterrows():
     lrfusiondat = pd.read_csv(row["filepath"], sep="\t")
-    lrfusiondat["sample"] = row["sample"]
+    lrfusiondat["sample_id"] = row["sample_id"]
     fusion_df = pd.concat([fusion_df, lrfusiondat])
 # drop all fusions with CDS
 coding_fusions = fusion_df[fusion_df["FUSION_TRANSL"] != "."]
@@ -47,7 +47,7 @@ for (genes, ORF, cds_lr, leftcds, rightcds, leftgene, rightgene, lbrk, rbrk), gr
         "CDS_LEFT_RANGE": cds_lr,
         'CDS_RIGHT_ID': rightcds,
         'FUSION_TRANSL': ORF,
-        'samples': ",".join(list(group['sample'])),
+        'sample_ids': ",".join(list(group['sample_id'])),
         'FFPM': ",".join(f"{x:.6f}" for x in group['LR_FFPM'])
     })
 # make the fusion table

@@ -7,10 +7,16 @@
     "items": {
         "type": "object",
         "properties": {
-            "sample": {
+            "subject_id": {
                 "type": "string",
                 "pattern": "^\\S+$",
-                "errorMessage": "Sample name must be provided and cannot contain spaces",
+                "errorMessage": "Subject ID must be provided and cannot contain spaces",
+                "meta": ["subject_id"]
+            },
+            "sample_id": {
+                "type": "string",
+                "pattern": "^\\S+$",
+                "errorMessage": "Sample ID must be provided and cannot contain spaces",
                 "meta": ["id"]
             },
             "sequence_type": {
@@ -31,6 +37,6 @@
                 "errorMessage": "filepath must be provided and cannot contain spaces"
             }
         },
-        "required": ["sample", "sequence_type", "filetype", "filepath"]
+        "required": ["subject_id", "sample_id", "sequence_type", "filetype", "filepath"]
     }
 }

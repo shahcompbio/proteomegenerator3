@@ -164,21 +164,22 @@ When `--fusions` is enabled, the workflow:
 
 Samplesheet CSV with long-format (one row per file):
 
-| Column          | Required | Values                              | Description       |
-| --------------- | -------- | ----------------------------------- | ----------------- |
-| `sample`        | Yes      | String (no spaces)                  | Sample identifier |
-| `sequence_type` | Yes      | `long_read`, `short_read`, `fusion` | Data modality     |
-| `filetype`      | Yes      | `bam`, `rc_file`, `tsv`             | File format       |
-| `filepath`      | Yes      | File path                           | Path to the file  |
+| Column          | Required | Values                              | Description                |
+| --------------- | -------- | ----------------------------------- | -------------------------- |
+| `subject_id`    | Yes      | String (no spaces)                  | Subject/patient identifier |
+| `sample_id`     | Yes      | String (no spaces)                  | Sample identifier          |
+| `sequence_type` | Yes      | `long_read`, `short_read`, `fusion` | Data modality              |
+| `filetype`      | Yes      | `bam`, `rc_file`, `tsv`             | File format                |
+| `filepath`      | Yes      | File path                           | Path to the file           |
 
 **Example:**
 
 ```csv
-sample,sequence_type,filetype,filepath
-SAMPLE1,long_read,bam,/path/to/sample1.bam
-SAMPLE1,long_read,rc_file,/path/to/sample1.rds
-SAMPLE1,fusion,tsv,/path/to/sample1_fusions.tsv
-SAMPLE2,long_read,bam,/path/to/sample2.bam
+subject_id,sample_id,sequence_type,filetype,filepath
+PATIENT1,SAMPLE1,long_read,bam,/path/to/sample1.bam
+PATIENT1,SAMPLE1,long_read,rc_file,/path/to/sample1.rds
+PATIENT1,SAMPLE1,fusion,tsv,/path/to/sample1_fusions.tsv
+PATIENT1,SAMPLE2,long_read,bam,/path/to/sample2.bam
 ```
 
 **Validation Rules:**

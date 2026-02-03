@@ -190,7 +190,7 @@ workflow PROTEOMEGENERATOR3 {
 def countSamples(input) {
     def lines = file(input).readLines()
     def header = lines[0].split(',')
-    def sampleIdx = header.findIndexOf { it == 'sample' }
+    def sampleIdx = header.findIndexOf { it == 'sample_id' }
 
     // Get unique sample names (excluding header) for long-format samplesheet
     def samples = lines[1..-1]

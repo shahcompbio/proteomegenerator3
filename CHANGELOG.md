@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **BREAKING**: Samplesheet format updated to support multiple samples per subject/patient
+  - Added required `subject_id` column for patient/subject identifier
+  - Renamed `sample` column to `sample_id`
+  - `subject_id` is available in metadata as `meta.subject_id` for future subject-level processing
 - FASTA_MERGE_ANNOTATE subworkflow now handles both bambu and stringtie outputs
   - Branching logic to separate outputs by tool type
   - CAT_CAT_SAMPLES process to merge bambu and stringtie fastas per sample

@@ -41,21 +41,22 @@ First, prepare a samplesheet with your input data that looks as follows:
 `samplesheet.csv`:
 
 ```csv
-sample,sequence_type,filetype,filepath
-SAMPLE1,long_read,bam,/path/to/sample1.bam
-SAMPLE1,long_read,rc_file,/path/to/sample1.rds
-SAMPLE1,fusion,tsv,/path/to/sample1_fusions.tsv
-SAMPLE2,long_read,bam,/path/to/sample2.bam
+subject_id,sample_id,sequence_type,filetype,filepath
+PATIENT1,SAMPLE1,long_read,bam,/path/to/sample1.bam
+PATIENT1,SAMPLE1,long_read,rc_file,/path/to/sample1.rds
+PATIENT1,SAMPLE1,fusion,tsv,/path/to/sample1_fusions.tsv
+PATIENT1,SAMPLE2,long_read,bam,/path/to/sample2.bam
 ```
 
 Each row represents a single file associated with a sample. The columns are as follows:
 
-| Column          | Required | Values                              | Description       |
-| --------------- | -------- | ----------------------------------- | ----------------- |
-| `sample`        | Yes      | String (no spaces)                  | Sample identifier |
-| `sequence_type` | Yes      | `long_read`, `short_read`, `fusion` | Data modality     |
-| `filetype`      | Yes      | `bam`, `rc_file`, `tsv`             | File format       |
-| `filepath`      | Yes      | File path                           | Path to the file  |
+| Column          | Required | Values                              | Description                |
+| --------------- | -------- | ----------------------------------- | -------------------------- |
+| `subject_id`    | Yes      | String (no spaces)                  | Subject/patient identifier |
+| `sample_id`     | Yes      | String (no spaces)                  | Sample identifier          |
+| `sequence_type` | Yes      | `long_read`, `short_read`, `fusion` | Data modality              |
+| `filetype`      | Yes      | `bam`, `rc_file`, `tsv`             | File format                |
+| `filepath`      | Yes      | File path                           | Path to the file           |
 
 **Requirements:**
 
@@ -147,9 +148,9 @@ nextflow run kentsislab/proteomegenerator3 -r 1.2.0 \
 When using `--short_reads`, your samplesheet should include `short_read` + `bam` entries:
 
 ```csv
-sample,sequence_type,filetype,filepath
-SAMPLE1,long_read,bam,/path/to/sample1_longread.bam
-SAMPLE1,short_read,bam,/path/to/sample1_shortread.bam
+subject_id,sample_id,sequence_type,filetype,filepath
+PATIENT1,SAMPLE1,long_read,bam,/path/to/sample1_longread.bam
+PATIENT1,SAMPLE1,short_read,bam,/path/to/sample1_shortread.bam
 ```
 
 Short-read transcripts are assembled using StringTie and the resulting ORF predictions are merged with long-read (Bambu) predictions in the final proteome database.
