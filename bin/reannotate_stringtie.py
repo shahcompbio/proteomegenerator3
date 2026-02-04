@@ -8,7 +8,6 @@ import logging
 
 logger = logging.getLogger()
 logger.setLevel(logging.CRITICAL)
-from tqdm import tqdm
 import polars
 from pathlib import Path
 import typing as t
@@ -69,10 +68,9 @@ print(set(df["strand"]))
 grouped = df.groupby("transcript_id")
 
 # Get the total number of groups for tqdm
-total_groups = len(grouped)
 # Iterate through each group
 i = 1
-for transcript_id, group_df in tqdm(grouped, total=total_groups):
+for transcript_id, group_df in grouped:
     ## rename gene
     ref_gene = list(group_df["ref_gene_id"])[0]
     if not ref_gene == "":
