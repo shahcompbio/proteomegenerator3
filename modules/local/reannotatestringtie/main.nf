@@ -21,7 +21,7 @@ process REANNOTATESTRINGTIE {
     script:
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    reannotate_gtf.py \\
+    reannotate_stringtie.py \\
         ${annotated_gtf} \\
         ${prefix}.reannotated.gtf
 
