@@ -285,10 +285,10 @@
                     "type": "boolean",
                     "description": "skip multisample transcript assembly and proteome"
                 },
-                "min_bambu_cpm": {
+                "min_lr_cts": {
                     "type": "number",
                     "default": 1,
-                    "description": "minimum CPM for detected long-read transcript"
+                    "description": "min full-length read count for detected transcripts"
                 }
             }
         },
