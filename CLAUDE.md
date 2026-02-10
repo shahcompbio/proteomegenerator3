@@ -81,7 +81,7 @@ nextflow run . -profile docker -resume
 2. **workflows/proteomegenerator3.nf**: Main workflow logic
 
    - **PREPROCESS_READS**: Filters BAM files by MAPQ/read length, removes accessory chromosome reads
-   - **ASSEMBLY_QUANT**: Runs Bambu for transcript assembly and quantification
+   - **BAM_ASSEMBLY_BAMBU**: Runs Bambu for transcript assembly and quantification
    - **GFFREAD**: Extracts cDNA sequences from assembled transcripts
    - **CAT_CAT**: Concatenates transcript and fusion FASTA files (when fusions enabled)
    - **PREDICT_ORFS**: Predicts ORFs using Transdecoder
@@ -90,7 +90,7 @@ nextflow run . -profile docker -resume
 3. **Subworkflows** (in `subworkflows/local/`):
 
    - `preprocess_reads/`: Read filtering and quality control
-   - `assembly_quant/`: Transcript assembly with Bambu
+   - `bam_assembly_bambu/`: Transcript assembly with Bambu
    - `predict_orfs/`: ORF prediction with Transdecoder and FASTA formatting
 
 4. **Python Scripts** (in `bin/`):
@@ -156,19 +156,38 @@ When `--fusions` is enabled, the workflow:
 
 **ORF Prediction**:
 
-- `--fusions`: Include fusion contigs from JAFFAL (default: false)
+- `--fusions`: Include fusion predictions from ctat-lr-fusion (default: false)
+- `--short_reads`: Enable short-read RNA-seq assembly and quantification (default: false)
 - `--multiple_orfs`: Allow multiple ORFs per transcript (beta, default: false)
 
 ## Input Format
 
-Samplesheet CSV with columns:
+Samplesheet CSV with long-format (one row per file):
 
-- `sample`: Sample name
-- `bam`: Aligned, sorted long-read RNA-seq BAM
-- `bai`: BAM index file
-- `rcFile`: Optional pre-computed Bambu read class file
-- `jaffal_fasta`: Optional fusion contigs from JAFFAL
-- `jaffal_table`: Optional fusion metadata from JAFFAL
+| Column          | Required | Values                              | Description                |
+| --------------- | -------- | ----------------------------------- | -------------------------- |
+| `subject_id`    | Yes      | String (no spaces)                  | Subject/patient identifier |
+| `sample_id`     | Yes      | String (no spaces)                  | Sample identifier          |
+| `sequence_type` | Yes      | `long_read`, `short_read`, `fusion` | Data modality              |
+| `filetype`      | Yes      | `bam`, `rc_file`, `tsv`             | File format                |
+| `filepath`      | Yes      | File path                           | Path to the file           |
+
+**Example:**
+
+```csv
+subject_id,sample_id,sequence_type,filetype,filepath
+PATIENT1,SAMPLE1,long_read,bam,/path/to/sample1.bam
+PATIENT1,SAMPLE1,long_read,rc_file,/path/to/sample1.rds
+PATIENT1,SAMPLE1,fusion,tsv,/path/to/sample1_fusions.tsv
+PATIENT1,SAMPLE2,long_read,bam,/path/to/sample2.bam
+```
+
+**Validation Rules:**
+
+- Every sample MUST have at least one `long_read` + `bam` entry
+- `rc_file` filetype only valid with `sequence_type: long_read`
+- `fusion` entries only processed when `--fusions` flag is enabled
+- `short_read` entries only processed when `--short_reads` flag is enabled
 
 ## Output Structure
 

@@ -1,11 +1,11 @@
 nextflow_pipeline {
 
-    name "Test pipeline"
+    name "Test pipeline starting from rcfiles"
     script "../main.nf"
     tag "pipeline"
 
-    test("Test full proteomegenerator3 pipeline") {
-
+    test("Test pipeline starting from rcfiles") {
+        options "-stub"
         when {
             params {
                 input = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/samplesheet_multisample.csv'
@@ -14,6 +14,7 @@ nextflow_pipeline {
                 gtf = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/reference/Homo_sapiens.GRCh38.91_chr9_1_1000000.gtf'
                 // skip preprocessing
                 skip_preprocessing = true
+                fusions = true
                 outdir = "$outputDir"
             }
         }

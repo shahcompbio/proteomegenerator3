@@ -37,19 +37,13 @@ process PHILOSOPHER_DATABASE {
     """
 
     stub:
-    def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    // TODO nf-core: A stub section should mimic the execution of the original module as best as possible
-    //               Have a look at the following examples:
-    //               Simple example: https://github.com/nf-core/modules/blob/818474a292b4860ae8ff88e149fbcda68814114d/modules/nf-core/bcftools/annotate/main.nf#L47-L63
-    //               Complex example: https://github.com/nf-core/modules/blob/818474a292b4860ae8ff88e149fbcda68814114d/modules/nf-core/bedtools/split/main.nf#L38-L54
     """
-
-    touch ${prefix}.bam
+    touch ${prefix}.fas
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        philosopher: \$(philosopher --version)
+        philosopher: 5.1.2
     END_VERSIONS
     """
 }

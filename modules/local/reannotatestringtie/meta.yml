@@ -1,33 +1,29 @@
----
 # yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/meta-schema.json
-name: "writefasta"
-## TODO nf-core: Add a description of the module and list keywords
+# # TODO nf-core: Add a description of the module and list keywords
+name: "reannotatestringtie"
 description: write your description here
 keywords:
   - sort
   - example
   - genomics
 tools:
-  - "writefasta":
-      ## TODO nf-core: Add a description and other details for the software below
+  ## TODO nf-core: Add a description and other details for the software below
+  - "reannotatestringtie":
       description: ""
       homepage: ""
       documentation: ""
       tool_dev_url: ""
       doi: ""
-      licence:
-      identifier:
+      licence: null
+      identifier: null
 
-## TODO nf-core: Add a description of all of the variables used as input
 input:
-  # Only when we have meta
+  ### TODO nf-core: Add a description of all of the variables used as input
   - - meta:
         type: map
         description: |
           Groovy Map containing sample information
           e.g. `[ id:'sample1' ]`
-
-    ## TODO nf-core: Delete / customise this example input
     - bam:
         type: file
         description: Sorted BAM/CRAM/SAM file
@@ -37,16 +33,14 @@ input:
           - edam: "http://edamontology.org/format_2573" # CRAM
           - edam: "http://edamontology.org/format_3462" # SAM
 
-## TODO nf-core: Add a description of all of the variables used as output
 output:
-  - bam:
-      #Only when we have meta
-      - meta:
+  ### TODO nf-core: Add a description of all of the variables used as output
+  bam:
+    - - meta:
           type: map
           description: |
             Groovy Map containing sample information
             e.g. `[ id:'sample1' ]`
-      ## TODO nf-core: Delete / customise this example output
       - "*.bam":
           type: file
           description: Sorted BAM/CRAM/SAM file
@@ -55,13 +49,28 @@ output:
             - edam: "http://edamontology.org/format_2572" # BAM
             - edam: "http://edamontology.org/format_2573" # CRAM
             - edam: "http://edamontology.org/format_3462" # SAM
+  versions_reannotatestringtie:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "reannotatestringtie":
+          type: string
+          description: The name of the tool
+      - "reannotatestringtie --version":
+          type: eval
+          description: The expression to obtain the version of the tool
 
-  - versions:
-      - "versions.yml":
-          type: file
-          description: File containing software versions
-          pattern: "versions.yml"
-
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - reannotatestringtie:
+          type: string
+          description: The name of the tool
+      - reannotatestringtie --version:
+          type: eval
+          description: The expression to obtain the version of the tool
 authors:
   - "@apsteinberg"
 maintainers:

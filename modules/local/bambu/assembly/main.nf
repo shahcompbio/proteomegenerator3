@@ -49,18 +49,20 @@ process BAMBU_ASSEMBLY {
     """
 
     stub:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    // TODO nf-core: A stub section should mimic the execution of the original module as best as possible
-    //               Have a look at the following examples:
-    //               Simple example: https://github.com/nf-core/modules/blob/818474a292b4860ae8ff88e149fbcda68814114d/modules/nf-core/bcftools/annotate/main.nf#L47-L63
-    //               Complex example: https://github.com/nf-core/modules/blob/818474a292b4860ae8ff88e149fbcda68814114d/modules/nf-core/bedtools/split/main.nf#L38-L54
     """
-    touch ${prefix}.bam
+    touch se.RData
+    touch extended_annotations.gtf
+    touch counts_gene.txt
+    touch counts_transcript.txt
+    touch CPM_transcript.txt
+    touch fullLengthCounts_transcript.txt
+    touch uniqueCounts_transcript.txt
+    touch bambu_assembly.log
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        bambu: \$(samtools --version |& sed '1!d ; s/samtools //')
+        r-base: \$(echo \$(R --version 2>&1) | sed 's/^.*R version //; s/ .*\$//')
+        bambu: \$(Rscript -e "library(bambu); cat(as.character(packageVersion('bambu')))")
     END_VERSIONS
     """
 }

@@ -4,7 +4,6 @@ include { DIAMOND_MAKEDB       } from '../../../modules/nf-core/diamond/makedb/m
 include { DIAMOND_BLASTP       } from '../../../modules/nf-core/diamond/blastp/main'
 include { TRANSDECODER_LONGORF } from '../../../modules/local/transdecoder/longorf/main'
 include { TRANSDECODER_PREDICT } from '../../../modules/local/transdecoder/predict/main'
-include { WRITEFASTA           } from '../../../modules/local/writefasta/main'
 include { TRANSDECODER2FASTA   } from '../../../modules/local/transdecoder2fasta/main'
 workflow PREDICT_ORFS {
     take:

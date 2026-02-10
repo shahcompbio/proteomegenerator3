@@ -7,7 +7,7 @@ include { SEMERGE                             } from '../../../modules/local/sem
 include { SEMERGE as SEQUANT_MERGE            } from '../../../modules/local/semerge/main'
 include { BAMBU_FILTER                        } from '../../../modules/local/bambu/filter/main'
 
-workflow ASSEMBLY_QUANT {
+workflow BAM_ASSEMBLY_BAMBU {
     take:
     rc_ch // channel: [val(meta), reads]
     skip_multisample // val
@@ -64,10 +64,10 @@ workflow ASSEMBLY_QUANT {
         BAMBU_MERGE_QUANT(merge_quant_ch, params.yieldsize, params.fasta)
         ch_versions = ch_versions.mix(BAMBU_MERGE_QUANT.out.versions)
         // collect all summarized experiments for each NDR
+        // use minimal meta with only id and NDR to ensure all samples are grouped together
         se_ch = BAMBU_MERGE_QUANT.out.se
             .map { meta, se ->
-                def fmeta = meta.clone()
-                fmeta.id = "merge"
+                def fmeta = [id: "merge", NDR: meta.NDR]
                 return [fmeta, se]
             }
             .groupTuple(by: 0)

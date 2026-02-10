@@ -7,34 +7,36 @@
     "items": {
         "type": "object",
         "properties": {
-            "sample": {
+            "subject_id": {
                 "type": "string",
                 "pattern": "^\\S+$",
-                "errorMessage": "Sample name must be provided and cannot contain spaces",
+                "errorMessage": "Subject ID must be provided and cannot contain spaces",
+                "meta": ["subject_id"]
+            },
+            "sample_id": {
+                "type": "string",
+                "pattern": "^\\S+$",
+                "errorMessage": "Sample ID must be provided and cannot contain spaces",
                 "meta": ["id"]
             },
-            "bam": {
+            "sequence_type": {
                 "type": "string",
-                "format": "file-path",
-                "exists": true,
-                "pattern": "^\\S+\\.bam$",
-                "errorMessage": "bam file for aligned reads must be provided, cannot contain spaces and must have extension '.bam'"
+                "enum": ["long_read", "short_read", "fusion"],
+                "errorMessage": "sequence_type must be one of: long_read, short_read, fusion"
             },
-            "rcFile": {
+            "filetype": {
                 "type": "string",
-                "format": "file-path",
-                "exists": true,
-                "pattern": "^\\S+\\.rds$",
-                "errorMessage": "transcript read classes from previous bambu runs cannot contain spaces and must have extension '.rds'"
+                "enum": ["bam", "rc_file", "tsv"],
+                "errorMessage": "filetype must be one of: bam, rc_file, tsv"
             },
-            "fusion_tsv": {
+            "filepath": {
                 "type": "string",
                 "format": "file-path",
                 "exists": true,
-                "pattern": "^\\S+\\.tsv$",
-                "errorMessage": "ctat-lr-fusion predictions tsv; cannot contain spaces and must have extension '.tsv'"
+                "pattern": "^\\S+$",
+                "errorMessage": "filepath must be provided and cannot contain spaces"
             }
         },
-        "required": ["sample", "bam"]
+        "required": ["subject_id", "sample_id", "sequence_type", "filetype", "filepath"]
     }
 }

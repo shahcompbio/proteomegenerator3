@@ -22,7 +22,7 @@ process TRANSDECODER2FASTA {
 
     script:
     def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
+    def prefix = task.ext.prefix ?: "${meta.id}${meta.tool ? "_${meta.tool}" : ''}"
     """
     transdecoder2fasta.py \\
         ${peps} \\
@@ -41,8 +41,7 @@ process TRANSDECODER2FASTA {
     """
 
     stub:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
+    def prefix = task.ext.prefix ?: "${meta.id}${meta.tool ? "_${meta.tool}" : ''}"
     """
     touch ${prefix}.predicted_orfs.fasta
     touch ${prefix}.predicted_orf_info.tsv

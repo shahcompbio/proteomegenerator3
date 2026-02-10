@@ -8,13 +8,18 @@ Merge fusion calls across multiple samples based on gene symbols and breakpoints
 samplesheet = sys.argv[1] # samplesheet for pipeline
 fusion_info_path = sys.argv[2]
 output_fasta = sys.argv[3]
-# read in metadata
+# read in metadata (long-format samplesheet)
 metadata = pd.read_csv(samplesheet)
+# filter for fusion TSV entries only
+fusion_rows = metadata[
+    (metadata['sequence_type'] == 'fusion') &
+    (metadata['filetype'] == 'tsv')
+]
 # make a dataframe of fusions
 fusion_df = pd.DataFrame()
-for _, row in metadata.iterrows():
-    lrfusiondat = pd.read_csv(row["fusion_tsv"], sep="\t")
-    lrfusiondat["sample"] = row["sample"]
+for _, row in fusion_rows.iterrows():
+    lrfusiondat = pd.read_csv(row["filepath"], sep="\t")
+    lrfusiondat["sample_id"] = row["sample_id"]
     fusion_df = pd.concat([fusion_df, lrfusiondat])
 # drop all fusions with CDS
 coding_fusions = fusion_df[fusion_df["FUSION_TRANSL"] != "."]
@@ -42,7 +47,7 @@ for (genes, ORF, cds_lr, leftcds, rightcds, leftgene, rightgene, lbrk, rbrk), gr
         "CDS_LEFT_RANGE": cds_lr,
         'CDS_RIGHT_ID': rightcds,
         'FUSION_TRANSL': ORF,
-        'samples': ",".join(list(group['sample'])),
+        'sample_ids': ",".join(list(group['sample_id'])),
         'FFPM': ",".join(f"{x:.6f}" for x in group['LR_FFPM'])
     })
 # make the fusion table

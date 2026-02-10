@@ -284,6 +284,11 @@
                 "skip_multisample": {
                     "type": "boolean",
                     "description": "skip multisample transcript assembly and proteome"
+                },
+                "min_lr_cts": {
+                    "type": "number",
+                    "default": 1,
+                    "description": "min full-length read count for detected transcripts"
                 }
             }
         },
@@ -322,6 +327,23 @@
                     "description": "path to reference proteome to merge with + blast against in transdecoder"
                 }
             }
+        },
+        "short_read_rnaseq_options": {
+            "title": "Short-read RNAseq options",
+            "type": "object",
+            "description": "Parameters for short-read transcript assembly",
+            "default": "",
+            "properties": {
+                "short_reads": {
+                    "type": "boolean",
+                    "description": "enable short-read RNA-seq quantification (requires short_read BAM entries in samplesheet)"
+                },
+                "min_stringtie_tpm": {
+                    "type": "number",
+                    "default": 1,
+                    "description": "if merging across samples, min TPM for detected transcript"
+                }
+            }
         }
     },
     "allOf": [
@@ -345,6 +367,15 @@
         },
         {
             "$ref": "#/$defs/transdecoder_options"
+        },
+        {
+            "$ref": "#/$defs/short_read_rnaseq_options"
         }
-    ]
+    ],
+    "properties": {
+        "fusions": {
+            "type": "boolean",
+            "description": "enable if you have included fusion predictions from CTAT-lr-fusion in the samplesheet"
+        }
+    }
 }

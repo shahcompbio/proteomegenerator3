@@ -69,8 +69,12 @@ workflow PIPELINE_INITIALISATION {
 
     //
     // Create channel from input file provided through params.input
+    // New long-format: each row is [meta, sequence_type, filetype, filepath]
     //
     Channel.fromList(samplesheetToList(params.input, "${projectDir}/assets/schema_input.json"))
+        .map { meta, sequence_type, filetype, filepath ->
+            tuple(meta, sequence_type, filetype, filepath)
+        }
         .set { ch_samplesheet }
 
     emit:
@@ -239,4 +243,56 @@ def methodsDescriptionText(mqc_methods_yaml) {
     def description_html = engine.createTemplate(methods_text).make(meta)
 
     return description_html.toString()
+}
+
+//
+// Extract long-read BAM channel from parsed samplesheet
+//
+def getLongReadBams(ch_samplesheet) {
+    return ch_samplesheet
+        .filter { meta, sequence_type, filetype, filepath ->
+            sequence_type == 'long_read' && filetype == 'bam'
+        }
+        .map { meta, sequence_type, filetype, filepath ->
+            tuple(meta, file(filepath))
+        }
+}
+
+//
+// Extract long-read rc_file channel from parsed samplesheet
+//
+def getLongReadRcFiles(ch_samplesheet) {
+    return ch_samplesheet
+        .filter { meta, sequence_type, filetype, filepath ->
+            sequence_type == 'long_read' && filetype == 'rc_file'
+        }
+        .map { meta, sequence_type, filetype, filepath ->
+            tuple(meta, file(filepath))
+        }
+}
+
+//
+// Extract short-read BAM channel from parsed samplesheet
+//
+def getShortReadBams(ch_samplesheet) {
+    return ch_samplesheet
+        .filter { meta, sequence_type, filetype, filepath ->
+            sequence_type == 'short_read' && filetype == 'bam'
+        }
+        .map { meta, sequence_type, filetype, filepath ->
+            tuple(meta, file(filepath))
+        }
+}
+
+//
+// Extract fusion TSV channel from parsed samplesheet
+//
+def getFusionTsvs(ch_samplesheet) {
+    return ch_samplesheet
+        .filter { meta, sequence_type, filetype, filepath ->
+            sequence_type == 'fusion' && filetype == 'tsv'
+        }
+        .map { meta, sequence_type, filetype, filepath ->
+            tuple(meta, file(filepath))
+        }
 }
