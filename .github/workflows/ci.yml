@@ -29,10 +29,10 @@ jobs:
           java-version: "21"
           distribution: "temurin"
 
-      - name: Setup Nextflow latest-edge
+      - name: Setup Nextflow
         uses: nf-core/setup-nextflow@v1
         with:
-          version: "latest-edge"
+          version: "latest-stable"
 
       - name: Install nf-test
         uses: nf-core/setup-nf-test@v1

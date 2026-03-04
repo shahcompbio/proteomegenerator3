@@ -274,7 +274,7 @@
                 },
                 "yieldsize": {
                     "type": "number",
-                    "default": 100000,
+                    "default": 100000.0,
                     "description": "Number of reads to process; lower helps with memory"
                 },
                 "recommended_NDR": {
@@ -287,7 +287,7 @@
                 },
                 "min_lr_cts": {
                     "type": "number",
-                    "default": 1,
+                    "default": 1.0,
                     "description": "min full-length read count for detected transcripts"
                 }
             }
@@ -325,6 +325,12 @@
                 "uniprot_proteome": {
                     "type": "string",
                     "description": "path to reference proteome to merge with + blast against in transdecoder"
+                },
+                "min_orf_len": {
+                    "type": "integer",
+                    "default": 100,
+                    "description": "minimum protein length",
+                    "help_text": ""
                 }
             }
         },
@@ -340,7 +346,7 @@
                 },
                 "min_stringtie_tpm": {
                     "type": "number",
-                    "default": 1,
+                    "default": 1.0,
                     "description": "if merging across samples, min TPM for detected transcript"
                 }
             }

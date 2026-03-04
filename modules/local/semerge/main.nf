@@ -1,8 +1,8 @@
 // merge summarized experiments
 process SEMERGE {
-    tag "${meta.id}_NDR_${meta.NDR}"
+    tag { "${meta.id}_NDR_${meta.NDR}" }
     label 'process_single'
-    publishDir "${params.outdir}/bambu/${meta.id}/transcriptome_NDR_${meta.NDR}", mode: 'copy'
+    publishDir { "${params.outdir}/bambu/${meta.id}/transcriptome_NDR_${meta.NDR}" }, mode: 'copy'
 
     conda "${moduleDir}/environment.yml"
     container "quay.io/shahlab_singularity/bambu:3.10.0beta"

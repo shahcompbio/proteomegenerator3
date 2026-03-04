@@ -80,7 +80,7 @@ workflow PROTEOMEGENERATOR3 {
         bam_ch,
     )
     ch_versions = ch_versions.mix(BAM_ASSEMBLY_BAMBU.out.versions)
-    assembly_ch = BAM_ASSEMBLY_BAMBU.out.gtf
+    assembly_ch = BAM_ASSEMBLY_BAMBU.out.gtf.map { meta, gtf -> [meta + [tool: 'bambu'], gtf] }
     //
     // process short-read rnaseq data (if provided)
     //
@@ -94,9 +94,8 @@ workflow PROTEOMEGENERATOR3 {
         )
         ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE.out.versions)
         // combine bambu and stringtie assemblies
-        bambu_ch = BAM_ASSEMBLY_BAMBU.out.gtf.map { meta, gtf -> [meta + [tool: 'bambu'], gtf] }
         stringtie_ch = BAM_ASSEMBLY_STRINGTIE.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie'], gtf] }
-        assembly_ch = bambu_ch.mix(stringtie_ch)
+        assembly_ch = assembly_ch.mix(stringtie_ch)
     }
     // extract cDNA
     GFFREAD(assembly_ch, params.fasta)

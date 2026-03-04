@@ -5,6 +5,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-03-04
+
+### Fixed
+
+- Fixed `meta.tool` not being set for bambu assemblies when `--short_reads` is disabled, which prevented TRANSDECODER2FASTA from publishing output correctly
+
+## [1.2.0] - 2026-02-10
+
 ### Added
 
 - Short-read RNA-seq support via StringTie integration
