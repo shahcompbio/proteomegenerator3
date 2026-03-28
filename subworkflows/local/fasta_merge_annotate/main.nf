@@ -28,9 +28,9 @@ workflow FASTA_MERGE_ANNOTATE {
         TRANSDECODER2FASTA.out.fasta
             .branch { meta, _fasta ->
                 bambu: meta.tool == 'bambu'
-                return tuple(meta.id, meta, _fasta)
+                return tuple(meta.subject_id ?: meta.id, meta, _fasta)
                 stringtie: meta.tool == 'stringtie'
-                return tuple(meta.id, meta, _fasta)
+                return tuple(meta.subject_id ?: meta.id, meta, _fasta)
             }
             .set { branch_ch }
         fasta_ch = branch_ch.bambu
