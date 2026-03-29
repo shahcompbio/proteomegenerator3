@@ -35,8 +35,8 @@ workflow FASTA_MERGE_ANNOTATE {
             .set { branch_ch }
         fasta_ch = branch_ch.bambu
             .combine(branch_ch.stringtie, by: 0)
-            .map { id, _meta1, bambu_fasta, _meta2, stringtie_fasta ->
-                [[id: id], [bambu_fasta, stringtie_fasta]]
+            .map { id, meta1, bambu_fasta, _meta2, stringtie_fasta ->
+                [[id: id, NDR: meta1.NDR], [bambu_fasta, stringtie_fasta]]
             }
         CAT_CAT_SAMPLES(fasta_ch)
         ch_versions = ch_versions.mix(CAT_CAT_SAMPLES.out.versions.first())
