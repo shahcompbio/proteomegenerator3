@@ -547,3 +547,95 @@ follow-up PR against `dev`.
 - StringTie `--mix` mode for joint long+short assembly.
 - Resumable entry at StringTie merge (pre-computed per-sample GTFs from
   the samplesheet).
+
+---
+
+# Cross-cutting implementation note: `fasta_merge_annotate` branch logic
+
+**Applies to both the LRAA and StringTie additions — required work in PR 3.**
+
+The current `subworkflows/local/fasta_merge_annotate/main.nf` (lines 27-44
+in `dev` as of commit `a32f3f7`) has a hardcoded `branch` on
+`meta.tool` that pairs Bambu LR assemblies with StringTie SR assemblies
+per subject when `short_reads = true`:
+
+```groovy
+TRANSDECODER2FASTA.out.fasta
+    .branch { meta, _fasta ->
+        bambu:     meta.tool == 'bambu'
+        ...
+        stringtie: meta.tool == 'stringtie'
+        ...
+    }
+    .set { branch_ch }
+fasta_ch = branch_ch.bambu.combine(branch_ch.stringtie, by: 0) ...
+```
+
+This logic assumes exactly two possible `tool` values (`bambu`, `stringtie`)
+and will silently drop records for any new tag — `lraa`, `stringtie_lr`,
+`stringtie_sr` — meaning those assemblies would **never reach
+`CAT_CAT_SAMPLES` when `short_reads = true`**, and protein entries would
+silently disappear from the final FASTA.
+
+## Required changes
+
+Generalize the branch logic so it pairs *whatever* LR-assembler output
+exists with *whatever* SR-assembler output exists, per subject.
+Concretely, add a `meta.modality` field (`long_read` | `short_read`) at
+the point each assembler branch sets `meta.tool`, and have
+`fasta_merge_annotate` branch on `meta.modality` instead of `meta.tool`:
+
+In `workflows/proteomegenerator3.nf` tagging:
+
+```groovy
+// bambu
+[meta + [tool: 'bambu',         modality: 'long_read'],  gtf]
+// lraa
+[meta + [tool: 'lraa',          modality: 'long_read'],  gtf]
+// stringtie LR alias
+[meta + [tool: 'stringtie_lr',  modality: 'long_read'],  gtf]
+// stringtie SR alias
+[meta + [tool: 'stringtie_sr',  modality: 'short_read'], gtf]
+```
+
+In `fasta_merge_annotate/main.nf`:
+
+```groovy
+TRANSDECODER2FASTA.out.fasta
+    .branch { meta, _fasta ->
+        long_read:  meta.modality == 'long_read'
+        short_read: meta.modality == 'short_read'
+    }
+    .set { branch_ch }
+fasta_ch = branch_ch.long_read
+    .combine(branch_ch.short_read, by: 0)   // pair per subject_id
+    ...
+```
+
+## Edge case: multiple LR entries per subject
+
+With `long_read_assembler = stringtie` + `short_reads = true`, there's
+only one LR entry per subject (`stringtie_lr`), so the `combine(... , by: 0)`
+still pairs cleanly. But if we ever allow multiple LR assemblers per run
+(e.g., both Bambu and LRAA outputs mixed — explicitly out of scope for v1
+per §9.4 / §A1), the `combine` would produce a cartesian product. The
+either/or enum on `--long_read_assembler` prevents this for now;
+document the assumption in a code comment so it's not silently violated
+if someone later removes the enum constraint.
+
+## Tests
+
+Add an nf-test case for each of these tag combinations under
+`short_reads = true` to lock in the pairing behavior:
+
+- `bambu` + `stringtie_sr`
+- `lraa` + `stringtie_sr`
+- `stringtie_lr` + `stringtie_sr`
+
+Each should produce a per-subject paired FASTA and pass through
+`SEQKIT_RMDUP` without dropped entries.
+
+## Action item
+
+Add to PR 3's checklist (LRAA main-workflow wiring) **and** to the
+StringTie-LR PR: this single edit covers both.
