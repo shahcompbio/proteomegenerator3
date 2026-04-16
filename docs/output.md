@@ -2,32 +2,63 @@
 
 ## Introduction
 
-This document describes the output produced by the pipeline. Most of the plots are taken from the MultiQC report, which summarises results at the end of the pipeline.
-
-The directories listed below will be created in the results directory after the pipeline has finished. All paths are relative to the top-level results directory.
-
-<!-- TODO nf-core: Write this documentation describing your workflow's output -->
+This document describes the output produced by the pipeline. All paths are relative to the top-level results directory specified with `--outdir`.
 
 ## Pipeline overview
 
 The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
 
-- [FastQC](#fastqc) - Raw read QC
+- [Bambu](#bambu) - Read class generation, transcript assembly, and quantification
+- [Transdecoder](#transdecoder) - ORF prediction
+- [Proteome](#proteome) - Final proteome FASTA database with deduplication and statistics
 - [MultiQC](#multiqc) - Aggregate report describing results and QC from the whole pipeline
 - [Pipeline information](#pipeline-information) - Report metrics generated during the workflow execution
 
-### FastQC
+### Bambu
 
 <details markdown="1">
 <summary>Output files</summary>
 
-- `fastqc/`
-  - `*_fastqc.html`: FastQC report containing quality metrics.
-  - `*_fastqc.zip`: Zip archive containing the FastQC report, tab-delimited data file and plot images.
+- `bambu/<sample_id>/`
+  - `*.rds`: Bambu read class files (can be reused with `--skip_preprocessing` to speed up future runs)
+- `bambu/<sample_id>/transcriptome_NDR_<NDR>/`
+  - `*.gtf`: Transcript assembly GTF with novel and known transcripts
+  - `*_counts_gene.txt`: Gene-level expression quantification
+  - `*_counts_transcript.txt`: Transcript-level expression quantification
 
 </details>
 
-[FastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) gives general quality metrics about your sequenced reads. It provides information about the quality score distribution across your reads, per base sequence content (%A/T/G/C), adapter contamination and overrepresented sequences. For further reading and documentation see the [FastQC help pages](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/).
+[Bambu](https://github.com/GoekeLab/bambu) performs transcript discovery and quantification from long-read RNA-seq data. Read classes are generated from aligned BAM files, then used for guided transcript assembly at the specified Novel Discovery Rate (NDR). When multiple samples are provided (and `--skip_multisample` is not set), transcripts are merged across samples into a unified transcriptome before quantification.
+
+### Transdecoder
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `transdecoder/NDR_<NDR>/`
+  - `*.transdecoder.pep`: Predicted peptide sequences
+  - `*.transdecoder.gff3`: ORF predictions in GFF3 format
+  - `*.transdecoder.bed`: ORF predictions in BED format
+
+</details>
+
+[Transdecoder](https://github.com/TransDecoder/TransDecoder) identifies candidate coding regions within transcript sequences. ORFs are first identified with `TransDecoder.LongOrfs` (minimum length controlled by `--min_orf_len`), validated via DIAMOND BLAST against a UniProt/SwissProt reference proteome, and then refined with `TransDecoder.Predict`. Use `--single_best_only` to retain only the single best ORF per transcript.
+
+### Proteome
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `proteome/NDR_<NDR>/`
+  - `*.proteome.fa`: Final deduplicated proteome FASTA database (UniProt-style headers)
+  - `*.proteome.duplicated.detail.txt`: Details of duplicate sequences removed
+  - `*.seqkit_stats.tsv`: Sequence statistics for the final proteome (number of sequences, min/max/mean length, etc.)
+  - `*_fusion_stats.csv`: Fusion ORF statistics (if `--fusions` is enabled)
+  - `*.fasta`: Per-sample FASTA with predicted ORFs formatted for proteomics search tools
+
+</details>
+
+The final proteome database is produced by formatting Transdecoder ORFs into UniProt-style FASTA entries, concatenating with the SwissProt reference proteome, and deduplicating sequences with [SeqKit](https://bioinf.shenwei.me/seqkit/). Proteins are annotated with evidence levels: PE=1 for canonical (known) proteins, PE=2 for novel and fusion proteins. When `--fusions` is enabled, fusion ORFs from ctat-lr-fusion are included. When `--short_reads` is enabled, StringTie-derived ORFs are merged with Bambu-derived ORFs.
 
 ### MultiQC
 

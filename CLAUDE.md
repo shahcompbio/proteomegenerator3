@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Basic execution:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.0.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.2.2 \
   -profile <docker/singularity/.../institute> \
   --input samplesheet.csv \
   --fasta <REF_GENOME> \
@@ -158,7 +158,8 @@ When `--fusions` is enabled, the workflow:
 
 - `--fusions`: Include fusion predictions from ctat-lr-fusion (default: false)
 - `--short_reads`: Enable short-read RNA-seq assembly and quantification (default: false)
-- `--multiple_orfs`: Allow multiple ORFs per transcript (beta, default: false)
+- `--single_best_only`: Select only the single best ORF per transcript (default: false)
+- `--min_orf_len`: Minimum ORF length in amino acids for Transdecoder (default: 100)
 
 ## Input Format
 

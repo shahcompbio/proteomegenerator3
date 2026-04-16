@@ -5,6 +5,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-04-16
+
+### Added
+
+- CLI parameter `--min_orf_len` to modulate minimum ORF length for Transdecoder (default: 100)
+
+### Fixed
+
+- Fixed SEQKIT_RMDUP publish renaming bug for multiple fasta outputs; uses `ext.prefix` to set output filename instead of `saveAs` rename
+- Fixed publish results when only long-read data is supplied (no short-reads)
+- Fixed merging long- and short-read data in single sample mode
+- Fixed publishDir evaluation in SEMERGE at runtime
+- Propagate NDR in file naming for correct output directory structure
+- Give short/long-read merged proteomes subject ID prefix for proper sample identification
+
 ## [1.2.1] - 2026-03-04
 
 ### Fixed
