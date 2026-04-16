@@ -369,3 +369,181 @@ All PRs target `dev`.
 - [ ] Decide which LRAA isoform-discovery filters to expose as pipeline params (keep the surface minimal; prefer `--args` passthrough via `ext.args` for power users).
 - [ ] Confirm `merge_LRAA_GTFs.py` is on `$PATH` in the official image or needs a full path.
 - [ ] Profile memory/CPU on a representative ONT BAM to size resource labels.
+
+---
+
+# Plan addendum: StringTie as a third long-read assembler option
+
+Add StringTie as a third value for `--long_read_assembler`, alongside `bambu`
+and `lraa`. StringTie supports long reads natively via the `-L` flag. We
+**do not** adopt the 3-stage discover → merge → re-quant pattern here —
+StringTie's long-read path is per-sample assembly then `stringtie --merge`,
+with no cohort expression matrix. (A cohort matrix via `stringtie -e` +
+`prepDE.py` is out of scope for v1; deferred to future work.)
+
+This is deliberately the **straightforward option**: the existing
+`bam_assembly_stringtie` subworkflow and `modules/nf-core/stringtie/*`
+modules are reused as-is. Almost all the work is plumbing.
+
+## A1. Parameter change
+
+Extend the enum:
+
+| Param | Values |
+|---|---|
+| `long_read_assembler` | `bambu` \| `lraa` \| `stringtie` |
+
+No new flags needed. StringTie's long-read mode is activated via an
+`ext.args` selector in `conf/modules.config` (see §A4).
+
+## A2. Reuse the existing subworkflow with aliased imports
+
+`subworkflows/local/bam_assembly_stringtie/main.nf` is already generic with
+respect to LR vs SR — it runs per-sample STRINGTIE_STRINGTIE, merges with
+STRINGTIE_MERGE, then GFFCOMPARE + REANNOTATESTRINGTIE. Nothing about its
+internals cares whether the input BAMs are long-read or short-read.
+
+Import it twice with aliases in `workflows/proteomegenerator3.nf`:
+
+```groovy
+include { BAM_ASSEMBLY_STRINGTIE as BAM_ASSEMBLY_STRINGTIE_LR } \
+    from '../subworkflows/local/bam_assembly_stringtie/main'
+include { BAM_ASSEMBLY_STRINGTIE as BAM_ASSEMBLY_STRINGTIE_SR } \
+    from '../subworkflows/local/bam_assembly_stringtie/main'
+```
+
+Each aliased import gets its own fully qualified process path, so
+`ext.args` can differ per instance via `withName` selectors.
+
+## A3. Wiring in the main workflow
+
+```groovy
+if (params.long_read_assembler == 'bambu') {
+    BAM_ASSEMBLY_BAMBU(...)
+    assembly_ch = BAM_ASSEMBLY_BAMBU.out.gtf
+        .map { m, g -> [m + [tool: 'bambu'], g] }
+}
+else if (params.long_read_assembler == 'lraa') {
+    BAM_ASSEMBLY_LRAA(...)
+    assembly_ch = BAM_ASSEMBLY_LRAA.out.gtf
+        .map { m, g -> [m + [tool: 'lraa'], g] }
+}
+else if (params.long_read_assembler == 'stringtie') {
+    BAM_ASSEMBLY_STRINGTIE_LR(
+        bam_ch,               // long-read BAMs from PREPROCESS_READS
+        params.gtf,
+        params.skip_multisample,
+        sample_count,
+    )
+    ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_LR.out.versions)
+    assembly_ch = BAM_ASSEMBLY_STRINGTIE_LR.out.gtf
+        .map { m, g -> [m + [tool: 'stringtie_lr'], g] }
+}
+
+// short-read branch — unchanged interface, new alias, distinct tool tag
+if (params.short_reads) {
+    BAM_ASSEMBLY_STRINGTIE_SR(
+        ch_short_read_bams,
+        params.gtf,
+        params.skip_multisample,
+        sample_count,
+    )
+    ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_SR.out.versions)
+    stringtie_ch = BAM_ASSEMBLY_STRINGTIE_SR.out.gtf
+        .map { m, g -> [m + [tool: 'stringtie_sr'], g] }
+    assembly_ch = assembly_ch.mix(stringtie_ch)
+}
+```
+
+## A4. `conf/modules.config` — scope the `-L` flag to LR instance only
+
+```groovy
+process {
+    withName: 'PROTEOMEGENERATOR3:BAM_ASSEMBLY_STRINGTIE_LR:STRINGTIE_STRINGTIE' {
+        ext.args = '-L'
+    }
+    withName: 'PROTEOMEGENERATOR3:BAM_ASSEMBLY_STRINGTIE_SR:STRINGTIE_STRINGTIE' {
+        ext.args = ''   // short-read default
+    }
+}
+```
+
+No module edits required. `ext.args` is passed through by the nf-core
+stringtie module.
+
+## A5. What happens when `long_read_assembler = stringtie` *and* `short_reads = true`?
+
+**They run independently.** The LR and SR instances are distinct aliased
+subworkflow invocations, so:
+
+- Two independent `STRINGTIE_STRINGTIE` process calls per sample (one with
+  `-L`, one without), tagged and named distinctly — no process-cache
+  collisions.
+- Two independent `STRINGTIE_MERGE` results, one per modality.
+- Both merged GTFs flow into `assembly_ch` with distinct `meta.tool`
+  values (`stringtie_lr` vs `stringtie_sr`).
+- Downstream, `GFFREAD` → `PREDICT_ORFS` → `FASTA_MERGE_ANNOTATE` process
+  each assembly independently and the final FASTA merge treats them as
+  separate sources — same way it currently treats `bambu` + `stringtie`
+  side-by-side when short-reads are enabled alongside Bambu.
+
+**Not implemented (deferred):** StringTie's `--mix` mode, which does joint
+long+short-read assembly from paired BAMs in one call. That would be a
+substantial rewrite (new "mixed" subworkflow, paired-sample channel
+construction). If users want long+short co-assembly, we can revisit.
+
+**Caveat for users:** running StringTie on both modalities produces *two*
+transcript sets from the same sample, which may inflate duplicate ORFs in
+the final FASTA. The existing `SEQKIT_RMDUP` step in
+`FASTA_MERGE_ANNOTATE` should handle this, but worth validating during
+testing.
+
+## A6. Samplesheet — no changes
+
+StringTie consumes BAMs directly (same as LRAA). No new `filetype`
+values, no resumable-entry flag (StringTie runs are cheap enough that
+resuming at merge isn't worth the plumbing for v1).
+
+## A7. Schema, config, profile updates
+
+- `nextflow_schema.json`: extend `long_read_assembler` enum to include
+  `stringtie`.
+- Add `test_stringtie_lr` profile using the existing test dataset.
+- No new `conf/*.config` file needed; pass `--long_read_assembler=stringtie`
+  on the command line in the test profile.
+
+## A8. Tests
+
+- New nf-test variant: pipeline end-to-end with
+  `--long_read_assembler=stringtie`, single- and multi-sample.
+- Combo test: `--long_read_assembler=stringtie --short_reads=true` — verify
+  both `stringtie_lr` and `stringtie_sr` tool tags appear in the final
+  FASTA headers and no process-name collisions occur.
+- Existing `bam_assembly_stringtie` subworkflow tests don't need changes
+  (behavior is unchanged; only call sites differ).
+
+## A9. Docs
+
+- `docs/usage.md`: document the three assembler choices with a short
+  comparison table (quant matrix yes/no, multi-sample strategy, resumable
+  entry yes/no).
+- `CLAUDE.md`: update Architecture — note that `BAM_ASSEMBLY_STRINGTIE` is
+  now used in two roles (LR and SR) distinguished by `ext.args`.
+
+## A10. Estimated lift
+
+Roughly half a day end-to-end: ~4 small file edits
+(`nextflow.config`, `nextflow_schema.json`, `workflows/proteomegenerator3.nf`,
+`conf/modules.config`), a test profile, and a single end-to-end nf-test.
+Can ship in the same PR as the main-workflow wiring (PR 3 in §12) or as a
+follow-up PR against `dev`.
+
+## A11. Future work (out of scope for v1)
+
+- StringTie cohort expression matrix via `-e -G merged.gtf` per sample
+  plus `prepDE.py` aggregation. Would add a `STRINGTIE_QUANT` module + a
+  matrix-assembly helper, bringing StringTie to parity with Bambu/LRAA
+  outputs.
+- StringTie `--mix` mode for joint long+short assembly.
+- Resumable entry at StringTie merge (pre-computed per-sample GTFs from
+  the samplesheet).
