@@ -72,7 +72,7 @@ Now, you can run the pipeline using:
 <!-- TODO nf-core: update the following command to include all required parameters for a minimal example -->
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.2.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.2.2 \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --fasta <REF_GENOME> \
@@ -90,13 +90,13 @@ Where `REF_GENOME` and `REF_GTF` are the reference genome and transcriptome resp
 To see all optional parameters that could be used with the pipeline and their explanations, use the help menu:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.2.0 --help
+nextflow run kentsislab/proteomegenerator3 -r 1.2.2 --help
 ```
 
 This options can be run using flags. For example:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.2.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.2.2 \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --fasta <REF_GENOME> \
@@ -110,7 +110,7 @@ Will pre-filter the bam file before transcript assembly is performed on mapq and
 As another example, you can skip multi-sample transcript merging and process each sample independently:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.2.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.2.2 \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --fasta <REF_GENOME> \
@@ -122,7 +122,7 @@ nextflow run kentsislab/proteomegenerator3 -r 1.2.0 \
 To include fusion predictions from ctat-lr-fusion in your proteome database, use the `--fusions` flag:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.2.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.2.2 \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --fasta <REF_GENOME> \
@@ -136,7 +136,7 @@ Note that when using `--fusions`, your samplesheet must include `fusion` + `tsv`
 To include short-read RNA-seq data for complementary transcript assembly, use the `--short_reads` flag:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.2.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.2.2 \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --fasta <REF_GENOME> \
@@ -176,6 +176,9 @@ I have highlighted the following options here:
 11. `short_reads`: enable short-read RNA-seq assembly and quantification with StringTie [default: false]. Requires `short_read` + `bam` entries in samplesheet pointing to aligned short-read BAM files. Short-read transcripts are assembled independently and merged with long-read predictions in the final proteome database.
 12. `uniprot_proteome`: local path to UniProt proteome for (i) BLAST-based ORF validation in Transdecoder subworkflow and (ii) concatenation of the final proteome fasta file.
 13. `UPID`: UniProt proteome ID (UPID) for automated download (if no local path was provided with option #12) [default: UP000005640]
+14. `min_orf_len`: minimum ORF length (in amino acids) for Transdecoder [default: 100]
+15. `min_lr_cts`: minimum full-length read counts for Bambu transcript filtering [default: 1.0]
+16. `min_stringtie_tpm`: minimum TPM for StringTie transcript merging [default: 1.0]
 
 ## Credits
 

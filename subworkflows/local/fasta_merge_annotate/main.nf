@@ -28,15 +28,15 @@ workflow FASTA_MERGE_ANNOTATE {
         TRANSDECODER2FASTA.out.fasta
             .branch { meta, _fasta ->
                 bambu: meta.tool == 'bambu'
-                return tuple(meta.id, meta, _fasta)
+                return tuple(meta.subject_id ?: meta.id, meta, _fasta)
                 stringtie: meta.tool == 'stringtie'
-                return tuple(meta.id, meta, _fasta)
+                return tuple(meta.subject_id ?: meta.id, meta, _fasta)
             }
             .set { branch_ch }
         fasta_ch = branch_ch.bambu
             .combine(branch_ch.stringtie, by: 0)
-            .map { _id, meta1, bambu_fasta, _meta2, stringtie_fasta ->
-                [meta1, [bambu_fasta, stringtie_fasta]]
+            .map { id, meta1, bambu_fasta, _meta2, stringtie_fasta ->
+                [[id: id, NDR: meta1.NDR], [bambu_fasta, stringtie_fasta]]
             }
         CAT_CAT_SAMPLES(fasta_ch)
         ch_versions = ch_versions.mix(CAT_CAT_SAMPLES.out.versions.first())
@@ -70,7 +70,7 @@ workflow FASTA_MERGE_ANNOTATE {
                 [[id: meta.id], meta, fasta]
             }
             .combine(
-                FUSIONFASTA.out.fasta.map { meta, fasta -> [[id: meta.id], fasta] },
+                FUSIONFASTA.out.fasta.map { meta, fasta -> [[id: meta.subject_id ?: meta.id], fasta] },
                 by: 0
             )
             .map { _meta1, meta2, novel_proteins, fusions ->
