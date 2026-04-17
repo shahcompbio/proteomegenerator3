@@ -18,15 +18,15 @@ scope for v1.
 
 Key differences that drive the design:
 
-| Aspect | Bambu | LRAA |
-|---|---|---|
-| Multi-sample call | Single R call ingests all `rc_file`s, emits unified GTF + counts | No. One BAM per invocation. |
-| Merge utility | Built-in (`mode = "multi-sample"`) | External: `util/merge_LRAA_GTFs.py` |
-| Cohort quant | Built into merge call | Per-sample re-run with `--quant_only` against merged GTF, then external matrix assembly |
-| Input | Read-class RDS (pre-computed) or BAM | BAM directly (no read-class step) |
-| ONT-specific flag | N/A | **Omit `--HiFi`** on merge for ONT/LowFi mode |
-| NDR analog | `--NDR` | None; uses own isoform-discovery filters |
-| Shipped multi-sample orchestration | Bambu R package handles it | Only single-sample WDL; caller scripts the loop |
+| Aspect                             | Bambu                                                            | LRAA                                                                                    |
+| ---------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Multi-sample call                  | Single R call ingests all `rc_file`s, emits unified GTF + counts | No. One BAM per invocation.                                                             |
+| Merge utility                      | Built-in (`mode = "multi-sample"`)                               | External: `util/merge_LRAA_GTFs.py`                                                     |
+| Cohort quant                       | Built into merge call                                            | Per-sample re-run with `--quant_only` against merged GTF, then external matrix assembly |
+| Input                              | Read-class RDS (pre-computed) or BAM                             | BAM directly (no read-class step)                                                       |
+| ONT-specific flag                  | N/A                                                              | **Omit `--HiFi`** on merge for ONT/LowFi mode                                           |
+| NDR analog                         | `--NDR`                                                          | None; uses own isoform-discovery filters                                                |
+| Shipped multi-sample orchestration | Bambu R package handles it                                       | Only single-sample WDL; caller scripts the loop                                         |
 
 **Implication:** the LRAA subworkflow needs three stages — per-sample
 discovery → single merge → per-sample re-quant — plus a matrix-assembly step,
@@ -36,11 +36,11 @@ whereas Bambu fits in one or two.
 
 Add to `nextflow.config` and `nextflow_schema.json`:
 
-| Param | Type | Default | Notes |
-|---|---|---|---|
-| `long_read_assembler` | enum(`bambu`,`lraa`) | `bambu` | Top-level switch |
-| `skip_lraa_discovery` | bool | `false` | Resume at merge using pre-computed per-sample GTFs from the samplesheet |
-| `lraa_min_isoform_fraction` | float | TBD from `LRAA --help` | Expose key LRAA filter(s); finalize list during implementation |
+| Param                       | Type                 | Default                | Notes                                                                   |
+| --------------------------- | -------------------- | ---------------------- | ----------------------------------------------------------------------- |
+| `long_read_assembler`       | enum(`bambu`,`lraa`) | `bambu`                | Top-level switch                                                        |
+| `skip_lraa_discovery`       | bool                 | `false`                | Resume at merge using pre-computed per-sample GTFs from the samplesheet |
+| `lraa_min_isoform_fraction` | float                | TBD from `LRAA --help` | Expose key LRAA filter(s); finalize list during implementation          |
 
 Bambu-specific params (`NDR`, `recommended_NDR`, `yieldsize`, `min_lr_cts`)
 stay as-is and are only consumed when `long_read_assembler == 'bambu'`.
@@ -118,6 +118,7 @@ BAM_ASSEMBLY_LRAA
 ```
 
 Notes:
+
 - `PREPROCESS_READS` still runs (MAPQ / read-length filtering). Its `rc_ch`
   output is unused in the LRAA path; `bam_ch` is what LRAA consumes.
 - No NDR channel plumbing in the LRAA branch.
@@ -389,8 +390,8 @@ modules are reused as-is. Almost all the work is plumbing.
 
 Extend the enum:
 
-| Param | Values |
-|---|---|
+| Param                 | Values                           |
+| --------------------- | -------------------------------- |
 | `long_read_assembler` | `bambu` \| `lraa` \| `stringtie` |
 
 No new flags needed. StringTie's long-read mode is activated via an
@@ -471,7 +472,7 @@ process {
 No module edits required. `ext.args` is passed through by the nf-core
 stringtie module.
 
-## A5. What happens when `long_read_assembler = stringtie` *and* `short_reads = true`?
+## A5. What happens when `long_read_assembler = stringtie` _and_ `short_reads = true`?
 
 **They run independently.** The LR and SR instances are distinct aliased
 subworkflow invocations, so:
@@ -492,7 +493,7 @@ long+short-read assembly from paired BAMs in one call. That would be a
 substantial rewrite (new "mixed" subworkflow, paired-sample channel
 construction). If users want long+short co-assembly, we can revisit.
 
-**Caveat for users:** running StringTie on both modalities produces *two*
+**Caveat for users:** running StringTie on both modalities produces _two_
 transcript sets from the same sample, which may inflate duplicate ORFs in
 the final FASTA. The existing `SEQKIT_RMDUP` step in
 `FASTA_MERGE_ANNOTATE` should handle this, but worth validating during
@@ -579,8 +580,8 @@ silently disappear from the final FASTA.
 
 ## Required changes
 
-Generalize the branch logic so it pairs *whatever* LR-assembler output
-exists with *whatever* SR-assembler output exists, per subject.
+Generalize the branch logic so it pairs _whatever_ LR-assembler output
+exists with _whatever_ SR-assembler output exists, per subject.
 Concretely, add a `meta.modality` field (`long_read` | `short_read`) at
 the point each assembler branch sets `meta.tool`, and have
 `fasta_merge_annotate` branch on `meta.modality` instead of `meta.tool`:

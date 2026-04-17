@@ -33,7 +33,7 @@ process LRAA_ASSEMBLY {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        lraa: \$(LRAA --version 2>&1 | head -1)
+        lraa: "\$(LRAA --version 2>&1 | head -1)"
     END_VERSIONS
     """
 
@@ -46,7 +46,7 @@ process LRAA_ASSEMBLY {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        lraa: \$(LRAA --version 2>&1 | head -1)
+        lraa: "\$(LRAA --version 2>&1 | head -1)"
     END_VERSIONS
     """
 }
