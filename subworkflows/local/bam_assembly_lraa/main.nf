@@ -21,8 +21,8 @@ workflow BAM_ASSEMBLY_LRAA {
     ref_fasta // val: path(genome fasta)
 
     main:
-    ch_versions = Channel.empty()
-    lraa_out_ch = Channel.empty()
+    ch_versions = channel.empty()
+    lraa_out_ch = channel.empty()
 
     //
     // Step 1: Per-sample GTF source
@@ -73,7 +73,7 @@ workflow BAM_ASSEMBLY_LRAA {
     }
     else {
         // Multi-sample: merge → reannotate → re-quant → matrix assembly
-        merge_input = per_sample_gtfs.collect { _meta, gtf -> gtf }
+        merge_input = per_sample_gtfs.collect { _meta, gtf -> [[id: "merge"], gtf] }
 
         LRAA_MERGE(merge_input, ref_fasta)
         ch_versions = ch_versions.mix(LRAA_MERGE.out.versions)
@@ -104,15 +104,15 @@ workflow BAM_ASSEMBLY_LRAA {
         ch_versions = ch_versions.mix(LRAA_QUANT.out.versions.first())
 
         // Assemble cohort expression matrix
-        quant_files = LRAA_QUANT.out.quant.collect { _meta, expr -> expr }
+        quant_files = LRAA_QUANT.out.quant.collect { _meta, expr -> [[id: "merge"], expr] }
         LRAA_QUANTMERGE(quant_files)
         ch_versions = ch_versions.mix(LRAA_QUANTMERGE.out.versions)
     }
 
     emit:
     versions       = ch_versions
-    gtf            = lraa_out_ch                                                                           // channel: [ val(meta), path(gtf) ]
-    quant_matrix   = skip_multisample || sample_count == 1 ? Channel.empty() : LRAA_QUANTMERGE.out.matrix  // optional
-    sqanti_summary = LRAA_SQANTI.out.summary                                                               // channel: [ val(meta), path(tsv) ]
-    sqanti_plot    = LRAA_SQANTI.out.plot                                                                   // channel: [ val(meta), path(pdf) ]
+    gtf            = lraa_out_ch // channel: [ val(meta), path(gtf) ]
+    quant_matrix   = skip_multisample || sample_count == 1 ? Channel.empty() : LRAA_QUANTMERGE.out.matrix // optional
+    sqanti_summary = LRAA_SQANTI.out.summary // channel: [ val(meta), path(tsv) ]
+    sqanti_plot    = LRAA_SQANTI.out.plot // channel: [ val(meta), path(pdf) ]
 }

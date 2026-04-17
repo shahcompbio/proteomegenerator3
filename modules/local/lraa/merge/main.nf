@@ -1,18 +1,18 @@
 // Merge per-sample LRAA GTFs into a cohort-level GTF
 process LRAA_MERGE {
-    tag "merge"
+    tag "${meta.id}"
     label 'process_medium'
 
     conda "${moduleDir}/environment.yml"
     container "us-central1-docker.pkg.dev/methods-dev-lab/lraa/lraa:0.15.0"
 
     input:
-    path gtfs, stageAs: 'sample_gtfs/*'
+    tuple val(meta), path(gtfs, stageAs: 'sample_gtfs/*')
     path ref_genome
 
     output:
-    tuple val([id: 'merge']), path("cohort.LRAA.merged.gtf"), emit: gtf
-    path ("cohort.LRAA.merged.gtf.tracking.tsv"), emit: tracking
+    tuple val(meta), path("*.LRAA.merged.gtf"), emit: gtf
+    tuple val(meta), path("*.LRAA.merged.gtf.tracking.tsv"), emit: tracking
     path "versions.yml", emit: versions
 
     when:
@@ -20,11 +20,12 @@ process LRAA_MERGE {
 
     script:
     def args = task.ext.args ?: ''
+    def prefix = task.ext.prefix ?: "${meta.id}"
     """
     merge_LRAA_GTFs.py \\
         --genome ${ref_genome} \\
         --gtf sample_gtfs/*.gtf \\
-        --output_gtf cohort.LRAA.merged.gtf \\
+        --output_gtf ${prefix}.LRAA.merged.gtf \\
         ${args}
 
     cat <<-END_VERSIONS > versions.yml
@@ -34,9 +35,10 @@ process LRAA_MERGE {
     """
 
     stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    touch cohort.LRAA.merged.gtf
-    touch cohort.LRAA.merged.gtf.tracking.tsv
+    touch "${prefix}.LRAA.merged.gtf"
+    touch "${prefix}.LRAA.merged.gtf.tracking.tsv"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
