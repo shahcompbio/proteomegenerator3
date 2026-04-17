@@ -49,7 +49,7 @@ workflow PROTEOMEGENERATOR3 {
     // process long-read rnaseq data
     //
     if (!params.skip_preprocessing) {
-        PREPROCESS_READS(ch_long_read_bams, params.filter_reads, params.filter_acc_reads)
+        PREPROCESS_READS(ch_long_read_bams, params.filter_reads, params.filter_acc_reads, params.long_read_assembler)
         rc_ch = PREPROCESS_READS.out.reads
         bam_ch = PREPROCESS_READS.out.bam
         ch_versions = ch_versions.mix(PREPROCESS_READS.out.versions)
