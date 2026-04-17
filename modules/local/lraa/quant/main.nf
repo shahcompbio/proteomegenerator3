@@ -4,7 +4,7 @@ process LRAA_QUANT {
     label 'process_high'
 
     conda "${moduleDir}/environment.yml"
-    container "us-central1-docker.pkg.dev/methods-dev-lab/lraa/lraa:v0.15.0"
+    container "us-central1-docker.pkg.dev/methods-dev-lab/lraa/lraa:0.15.0"
 
     input:
     tuple val(meta), path(bam), path(cohort_gtf, stageAs: 'cohort.gtf')

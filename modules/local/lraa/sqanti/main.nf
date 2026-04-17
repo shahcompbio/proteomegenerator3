@@ -6,7 +6,7 @@ process LRAA_SQANTI {
     label 'process_single'
 
     conda "${moduleDir}/environment.yml"
-    container "us-central1-docker.pkg.dev/methods-dev-lab/lraa/lraa:v0.15.0"
+    container "us-central1-docker.pkg.dev/methods-dev-lab/lraa/lraa:0.15.0"
 
     input:
     tuple val(meta), path(input_gtf)

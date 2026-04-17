@@ -4,7 +4,7 @@ process LRAA_MERGE {
     label 'process_medium'
 
     conda "${moduleDir}/environment.yml"
-    container "us-central1-docker.pkg.dev/methods-dev-lab/lraa/lraa:v0.15.0"
+    container "us-central1-docker.pkg.dev/methods-dev-lab/lraa/lraa:0.15.0"
 
     input:
     path gtfs, stageAs: 'sample_gtfs/*'
