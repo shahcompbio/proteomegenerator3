@@ -17,7 +17,7 @@ workflow BAM_ASSEMBLY_LRAA {
     skip_multisample // val
     skip_discovery // val (params.skip_lraa_discovery)
     sample_count // val
-    ref_gtf_ch // channel: path(ref_gtf)
+    ref_gtf // val: path(ref_gtf)
     ref_fasta // val: path(genome fasta)
 
     main:
@@ -33,7 +33,7 @@ workflow BAM_ASSEMBLY_LRAA {
     }
     else {
         // Run guided assembly per sample
-        assembly_input = bam_ch.combine(ref_gtf_ch.map { gtf -> file(gtf) })
+        assembly_input = bam_ch.combine(Channel.of(file(ref_gtf)))
         LRAA_ASSEMBLY(assembly_input, ref_fasta)
         ch_versions = ch_versions.mix(LRAA_ASSEMBLY.out.versions.first())
         per_sample_gtfs = LRAA_ASSEMBLY.out.gtf
@@ -48,7 +48,7 @@ workflow BAM_ASSEMBLY_LRAA {
         GFFCOMPARE(
             per_sample_gtfs,
             [[], [], []],
-            [[id: "ref"], ref_gtf_ch.map { gtf -> file(gtf) }],
+            [[id: "ref"], ref_gtf],
         )
         ch_versions = ch_versions.mix(GFFCOMPARE.out.versions)
         REANNOTATEGTF(GFFCOMPARE.out.annotated_gtf)
@@ -58,7 +58,7 @@ workflow BAM_ASSEMBLY_LRAA {
         // Classify reannotated isoforms with SQANTI-like categories
         LRAA_SQANTI(
             REANNOTATEGTF.out.gtf,
-            ref_gtf_ch.map { gtf -> file(gtf) },
+            ref_gtf,
         )
         ch_versions = ch_versions.mix(LRAA_SQANTI.out.versions)
 
@@ -85,7 +85,7 @@ workflow BAM_ASSEMBLY_LRAA {
         GFFCOMPARE(
             LRAA_MERGE.out.gtf,
             [[], [], []],
-            [[id: "ref"], ref_gtf_ch.map { gtf -> file(gtf) }],
+            [[id: "ref"], ref_gtf],
         )
         ch_versions = ch_versions.mix(GFFCOMPARE.out.versions)
         REANNOTATEGTF(GFFCOMPARE.out.annotated_gtf)
@@ -95,7 +95,7 @@ workflow BAM_ASSEMBLY_LRAA {
         // Classify reannotated isoforms with SQANTI-like categories
         LRAA_SQANTI(
             REANNOTATEGTF.out.gtf,
-            ref_gtf_ch.map { gtf -> file(gtf) },
+            ref_gtf,
         )
         ch_versions = ch_versions.mix(LRAA_SQANTI.out.versions)
 

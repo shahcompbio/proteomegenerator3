@@ -97,7 +97,7 @@ workflow PROTEOMEGENERATOR3 {
             params.skip_multisample,
             params.skip_lraa_discovery,
             sample_count,
-            ref_gtf_ch,
+            params.gtf,
             params.fasta,
         )
         ch_versions = ch_versions.mix(BAM_ASSEMBLY_LRAA.out.versions)
