@@ -1,0 +1,42 @@
+nextflow_pipeline {
+
+    name "Test LRAA long-read assembler pathway"
+    script "../main.nf"
+    tag "pipeline"
+    tag "lraa"
+
+    test("Test LRAA multi-sample (long-read only)") {
+        when {
+            params {
+                input = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/samplesheet_multisample_nofusions.csv'
+                // Genome references
+                fasta = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/reference/Homo_sapiens.GRCh38.dna_sm.primary_assembly_chr9_1_1000000.fa'
+                gtf = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/reference/Homo_sapiens.GRCh38.91_chr9_1_1000000.gtf'
+                outdir = "$outputDir"
+                long_read_assembler = 'lraa'
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+
+    test("Test LRAA single-sample (long-read only)") {
+        when {
+            params {
+                input = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/samplesheet_multisample_nofusions.csv'
+                // Genome references
+                fasta = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/reference/Homo_sapiens.GRCh38.dna_sm.primary_assembly_chr9_1_1000000.fa'
+                gtf = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/reference/Homo_sapiens.GRCh38.91_chr9_1_1000000.gtf'
+                outdir = "$outputDir"
+                long_read_assembler = 'lraa'
+                skip_multisample = true
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}

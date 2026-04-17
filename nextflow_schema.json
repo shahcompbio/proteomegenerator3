@@ -257,10 +257,32 @@
                 }
             }
         },
+        "long_read_transcript_assembly": {
+            "title": "Long-read transcript assembly",
+            "type": "object",
+            "description": "Parameters for selecting and configuring the long-read transcript assembler",
+            "default": "",
+            "properties": {
+                "long_read_assembler": {
+                    "type": "string",
+                    "default": "bambu",
+                    "enum": ["bambu", "lraa", "stringtie"],
+                    "description": "Long-read transcript assembler to use"
+                },
+                "skip_lraa_discovery": {
+                    "type": "boolean",
+                    "description": "Skip LRAA per-sample discovery and use pre-computed GTFs from the samplesheet (lraa_gtf filetype). Only used when long_read_assembler = lraa."
+                },
+                "skip_multisample": {
+                    "type": "boolean",
+                    "description": "skip multisample transcript assembly and proteome"
+                }
+            }
+        },
         "bambu_parameters": {
             "title": "Bambu parameters",
             "type": "object",
-            "description": "parameters for transcript assembly",
+            "description": "parameters for long-read transcript assembly with Bambu",
             "default": "",
             "properties": {
                 "skip_preprocessing": {
@@ -274,20 +296,16 @@
                 },
                 "yieldsize": {
                     "type": "number",
-                    "default": 100000.0,
+                    "default": 100000,
                     "description": "Number of reads to process; lower helps with memory"
                 },
                 "recommended_NDR": {
                     "type": "boolean",
                     "description": "run bambu with recommended NDR"
                 },
-                "skip_multisample": {
-                    "type": "boolean",
-                    "description": "skip multisample transcript assembly and proteome"
-                },
                 "min_lr_cts": {
                     "type": "number",
-                    "default": 1.0,
+                    "default": 1,
                     "description": "min full-length read count for detected transcripts"
                 }
             }
@@ -329,8 +347,7 @@
                 "min_orf_len": {
                     "type": "integer",
                     "default": 100,
-                    "description": "minimum protein length",
-                    "help_text": ""
+                    "description": "minimum protein length"
                 }
             }
         },
@@ -346,7 +363,7 @@
                 },
                 "min_stringtie_tpm": {
                     "type": "number",
-                    "default": 1.0,
+                    "default": 1,
                     "description": "if merging across samples, min TPM for detected transcript"
                 }
             }
@@ -367,6 +384,9 @@
         },
         {
             "$ref": "#/$defs/read_filtering"
+        },
+        {
+            "$ref": "#/$defs/long_read_transcript_assembly"
         },
         {
             "$ref": "#/$defs/bambu_parameters"

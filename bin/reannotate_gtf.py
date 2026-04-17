@@ -78,6 +78,11 @@ p.add_argument(
     default="stringtie",
     help="assembler tool (determines novel transcript/gene prefix)",
 )
+p.add_argument(
+    "--mapping",
+    default=None,
+    help="optional output TSV mapping old IDs to new IDs",
+)
 args = p.parse_args()
 
 tx_prefix, gene_prefix = TOOL_PREFIXES[args.tool]
@@ -85,6 +90,7 @@ tx_prefix, gene_prefix = TOOL_PREFIXES[args.tool]
 gffcmp = read_gtf(args.gffcmp_results)
 
 annotatedat = pd.DataFrame()
+id_mapping_rows = []
 df = gffcmp
 ## nans give an error when doing ballgown estimates
 df["strand"] = df["strand"].apply(lambda x: x if x in ["+", "-"] else ".")
@@ -95,6 +101,7 @@ grouped = df.groupby("transcript_id")
 # Iterate through each group
 i = 1
 for transcript_id, group_df in grouped:
+    old_gene_id = list(group_df["gene_id"])[0]
     ## rename gene
     ref_gene = list(group_df["ref_gene_id"])[0]
     if not ref_gene == "":
@@ -109,7 +116,24 @@ for transcript_id, group_df in grouped:
         group_df["transcript_id"] = tx_id
     else:
         group_df["transcript_id"] = "%s%d" % (tx_prefix, i)
+
+    new_gene_id = list(group_df["gene_id"])[0]
+    new_tx_id = list(group_df["transcript_id"])[0]
+    id_mapping_rows.append(
+        {
+            "old_transcript_id": transcript_id,
+            "new_transcript_id": new_tx_id,
+            "old_gene_id": old_gene_id,
+            "new_gene_id": new_gene_id,
+            "class_code": class_code,
+        }
+    )
+
     annotatedat = pd.concat([annotatedat, group_df])
     i = i + 1
 
 write_gtf(annotatedat, args.output_file, args.tool)
+
+if args.mapping:
+    mapping_df = pd.DataFrame(id_mapping_rows)
+    mapping_df.to_csv(args.mapping, sep="\t", index=False)

@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/meta-schema.json
+name: "lraa_assembly"
+description: Per-sample guided transcript assembly and quantification using LRAA
+keywords:
+  - transcript-assembly
+  - long-read
+  - isoform-discovery
+tools:
+  - "lraa":
+      description: "Long Read Alignment Assembler - isoform discovery and quantification from long-read RNA-seq"
+      homepage: "https://github.com/MethodsDev/LongReadAlignmentAssembler"
+      documentation: "https://github.com/MethodsDev/LongReadAlignmentAssembler/wiki"
+      tool_dev_url: "https://github.com/MethodsDev/LongReadAlignmentAssembler"
+      doi: "10.64898/2026.02.12.705617"
+      licence: ["BSD-3-Clause"]
+      identifier: null
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. `[ id:'sample1' ]`
+    - bam:
+        type: file
+        description: Aligned long-read BAM file
+        pattern: "*.bam"
+    - ref_gtf:
+        type: file
+        description: Reference annotation GTF for guided mode
+        pattern: "*.gtf"
+  - - ref_genome:
+        type: file
+        description: Reference genome FASTA
+        pattern: "*.{fa,fasta}"
+
+output:
+  gtf:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "*.gtf":
+          type: file
+          description: Assembled transcript GTF
+          pattern: "*.gtf"
+  quant:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "*.quant.expr":
+          type: file
+          description: Expression quantification table
+          pattern: "*.quant.expr"
+  tracking:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "*.quant.tracking":
+          type: file
+          description: Per-read assignment tracking
+          pattern: "*.quant.tracking"
+  versions:
+    - "versions.yml":
+        type: file
+        description: File containing software versions
+        pattern: "versions.yml"
+
+authors:
+  - "@apsteinberg"
+maintainers:
+  - "@apsteinberg"
