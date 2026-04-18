@@ -1,14 +1,13 @@
 // Transcript assembly and quantification with LRAA
 // Three-stage pipeline: per-sample discovery → cohort merge → per-sample re-quant
 
-include { LRAA_ASSEMBLY        } from '../../../modules/local/lraa/assembly/main'
-include { LRAA_MERGE           } from '../../../modules/local/lraa/merge/main'
-include { LRAA_QUANT           } from '../../../modules/local/lraa/quant/main'
-include { LRAA_QUANTMERGE      } from '../../../modules/local/lraa/quantmerge/main'
-include { LRAA_SQANTI          } from '../../../modules/local/lraa/sqanti/main'
-include { LRAA_REANNOTATEQUANT } from '../../../modules/local/lraa/reannotatequant/main'
-include { GFFCOMPARE           } from '../../../modules/nf-core/gffcompare/main'
-include { REANNOTATEGTF        } from '../../../modules/local/reannotategtf/main'
+include { LRAA_ASSEMBLY                      } from '../../../modules/local/lraa/assembly/main'
+include { LRAA_MERGE                         } from '../../../modules/local/lraa/merge/main'
+include { LRAA_QUANT as LRAA_QUANT ; LRAA_QUANT as LRAA_REANNOTATEQUANT } from '../../../modules/local/lraa/quant/main'
+include { LRAA_QUANTMERGE                    } from '../../../modules/local/lraa/quantmerge/main'
+include { LRAA_SQANTI                        } from '../../../modules/local/lraa/sqanti/main'
+include { GFFCOMPARE                         } from '../../../modules/nf-core/gffcompare/main'
+include { REANNOTATEGTF                      } from '../../../modules/local/reannotategtf/main'
 
 workflow BAM_ASSEMBLY_LRAA {
     take:
@@ -23,6 +22,7 @@ workflow BAM_ASSEMBLY_LRAA {
     main:
     ch_versions = channel.empty()
     lraa_out_ch = channel.empty()
+    quant_input = channel.empty()
 
     //
     // Step 1: Per-sample GTF source
@@ -62,13 +62,14 @@ workflow BAM_ASSEMBLY_LRAA {
         )
         ch_versions = ch_versions.mix(LRAA_SQANTI.out.versions)
 
-        // Reannotate the per-sample quant with updated IDs
+        // re-run quant after reannotation
         if (!skip_discovery) {
-            reannotate_quant_input = LRAA_ASSEMBLY.out.quant.join(
-                REANNOTATEGTF.out.mapping
+            // Re-quantify each sample against the reannotated GTF
+            quant_input = bam_ch.combine(
+                REANNOTATEGTF.out.gtf.map { _meta, gtf -> gtf }
             )
-            LRAA_REANNOTATEQUANT(reannotate_quant_input)
-            ch_versions = ch_versions.mix(LRAA_REANNOTATEQUANT.out.versions)
+            LRAA_REANNOTATEQUANT(quant_input, ref_fasta)
+            ch_versions = ch_versions.mix(LRAA_REANNOTATEQUANT.out.versions.first())
         }
     }
     else {

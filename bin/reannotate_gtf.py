@@ -71,6 +71,10 @@ def custom_fields(row) -> str:
 
 p = argparse.ArgumentParser(description="Re-annotate gffcompare GTF with reference IDs")
 p.add_argument("gffcmp_results", help="gffcompare-annotated GTF")
+p.add_argument(
+    "reference_fai",
+    help="reference FASTA index (.fai) for filtering out transcripts with exon boundaries that exceed contig span",
+)
 p.add_argument("output_file", help="output re-annotated GTF")
 p.add_argument(
     "--tool",
@@ -94,12 +98,23 @@ id_mapping_rows = []
 df = gffcmp
 ## nans give an error when doing ballgown estimates
 df["strand"] = df["strand"].apply(lambda x: x if x in ["+", "-"] else ".")
-## a test
-print(set(df["strand"]))
+## filter out any transcript structures with exon boundaries that EXCEED the span of the contig (e.g. due to a gffcompare bug)
+reference_fai = pd.read_csv(
+    args.reference_fai,
+    sep="\t",
+    header=None,
+    names=["seqname", "length", "offset", "linebases", "linewidth"],
+)
+reference_lengths = dict(zip(reference_fai["seqname"], reference_fai["length"]))
+df = df[
+    df.apply(lambda row: row["end"] <= reference_lengths.get(row["seqname"], 0), axis=1)
+]
 grouped = df.groupby("transcript_id")
 
 # Iterate through each group
 i = 1
+# track transcript ids to check for duplicates
+tx_ids = []
 for transcript_id, group_df in grouped:
     old_gene_id = list(group_df["gene_id"])[0]
     ## rename gene
@@ -128,8 +143,17 @@ for transcript_id, group_df in grouped:
             "class_code": class_code,
         }
     )
-
-    annotatedat = pd.concat([annotatedat, group_df])
+    # check for duplicate transcript IDs, which can occur due to multiple
+    # transcripts having exact intron matches to the same reference transcript
+    # in this case, we keep the first one and skip the rest, but print a warning
+    if tx_id in tx_ids:
+        print(
+            f"Warning: transcript ID {tx_id} already seen, likely to multiple exact intron matches to ref transcript.\n"
+            f"Check gffcompare results for transcript {transcript_id}."
+        )
+    else:
+        tx_ids.append(tx_id)
+        annotatedat = pd.concat([annotatedat, group_df])
     i = i + 1
 
 write_gtf(annotatedat, args.output_file, args.tool)
