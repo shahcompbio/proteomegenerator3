@@ -3,7 +3,7 @@
 
 include { LRAA_ASSEMBLY                      } from '../../../modules/local/lraa/assembly/main'
 include { LRAA_MERGE                         } from '../../../modules/local/lraa/merge/main'
-include { LRAA_QUANT as LRAA_QUANT ; LRAA_QUANT as LRAA_REANNOTATEQUANT } from '../../../modules/local/lraa/quant/main'
+include { LRAA_QUANT ; LRAA_QUANT as LRAA_REANNOTATEQUANT } from '../../../modules/local/lraa/quant/main'
 include { LRAA_QUANTMERGE                    } from '../../../modules/local/lraa/quantmerge/main'
 include { LRAA_SQANTI                        } from '../../../modules/local/lraa/sqanti/main'
 include { GFFCOMPARE                         } from '../../../modules/nf-core/gffcompare/main'
@@ -18,6 +18,7 @@ workflow BAM_ASSEMBLY_LRAA {
     sample_count // val
     ref_gtf // val: path(ref_gtf)
     ref_fasta // val: path(genome fasta)
+    ref_fai // val: path(genome fai)
 
     main:
     ch_versions = channel.empty()
@@ -51,7 +52,7 @@ workflow BAM_ASSEMBLY_LRAA {
             [[id: "ref"], ref_gtf],
         )
         ch_versions = ch_versions.mix(GFFCOMPARE.out.versions)
-        REANNOTATEGTF(GFFCOMPARE.out.annotated_gtf)
+        REANNOTATEGTF(GFFCOMPARE.out.annotated_gtf, ref_fai)
         ch_versions = ch_versions.mix(REANNOTATEGTF.out.versions)
         lraa_out_ch = REANNOTATEGTF.out.gtf
 
@@ -89,7 +90,7 @@ workflow BAM_ASSEMBLY_LRAA {
             [[id: "ref"], ref_gtf],
         )
         ch_versions = ch_versions.mix(GFFCOMPARE.out.versions)
-        REANNOTATEGTF(GFFCOMPARE.out.annotated_gtf)
+        REANNOTATEGTF(GFFCOMPARE.out.annotated_gtf, ref_fai)
         ch_versions = ch_versions.mix(REANNOTATEGTF.out.versions)
         lraa_out_ch = REANNOTATEGTF.out.gtf
 

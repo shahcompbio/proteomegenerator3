@@ -21,14 +21,16 @@ process LRAA_ASSEMBLY {
 
     script:
     def args = task.ext.args ?: ''
-    prefix = task.ext.prefix ?: "${meta.id}"
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    def parallel_contigs = task.cpus / 2
     """
     LRAA \\
         --genome ${ref_genome} \\
         --gtf    reference.gtf \\
         --bam    ${bam} \\
         --output_prefix ${prefix} \\
-        --num_parallel_contigs ${task.cpus} \\
+        --num_parallel_contigs ${parallel_contigs} \\
+        --num_threads_per_worker 2 \\
         ${args}
 
     cat <<-END_VERSIONS > versions.yml

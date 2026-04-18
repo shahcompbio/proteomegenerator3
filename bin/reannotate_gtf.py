@@ -72,7 +72,7 @@ def custom_fields(row) -> str:
 p = argparse.ArgumentParser(description="Re-annotate gffcompare GTF with reference IDs")
 p.add_argument("gffcmp_results", help="gffcompare-annotated GTF")
 p.add_argument(
-    "reference_fai",
+    "--reference_fai",
     help="reference FASTA index (.fai) for filtering out transcripts with exon boundaries that exceed contig span",
 )
 p.add_argument("output_file", help="output re-annotated GTF")
@@ -114,7 +114,7 @@ grouped = df.groupby("transcript_id")
 # Iterate through each group
 i = 1
 # track transcript ids to check for duplicates
-tx_ids = []
+tx_ids = set()
 for transcript_id, group_df in grouped:
     old_gene_id = list(group_df["gene_id"])[0]
     ## rename gene
@@ -130,7 +130,8 @@ for transcript_id, group_df in grouped:
     if class_code == "=":
         group_df["transcript_id"] = tx_id
     else:
-        group_df["transcript_id"] = "%s%d" % (tx_prefix, i)
+        tx_id = "%s%d" % (tx_prefix, i)
+        group_df["transcript_id"] = tx_id
 
     new_gene_id = list(group_df["gene_id"])[0]
     new_tx_id = list(group_df["transcript_id"])[0]
@@ -152,7 +153,7 @@ for transcript_id, group_df in grouped:
             f"Check gffcompare results for transcript {transcript_id}."
         )
     else:
-        tx_ids.append(tx_id)
+        tx_ids.add(tx_id)
         annotatedat = pd.concat([annotatedat, group_df])
     i = i + 1
 

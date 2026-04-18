@@ -9,10 +9,11 @@ process REANNOTATEGTF {
 
     input:
     tuple val(meta), path(annotated_gtf)
+    path ref_fai
 
     output:
-    tuple val(meta), path("*.reannotated.gtf"),    emit: gtf
-    tuple val(meta), path("*.id_mapping.tsv"),     emit: mapping
+    tuple val(meta), path("*.reannotated.gtf"), emit: gtf
+    tuple val(meta), path("*.id_mapping.tsv"), emit: mapping
     path "versions.yml", emit: versions
 
     when:
@@ -23,8 +24,9 @@ process REANNOTATEGTF {
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
     reannotate_gtf.py \\
-        $args \\
+        ${args} \\
         --mapping ${prefix}.id_mapping.tsv \\
+        --reference_fai ${ref_fai} \\
         ${annotated_gtf} \\
         ${prefix}.reannotated.gtf
 

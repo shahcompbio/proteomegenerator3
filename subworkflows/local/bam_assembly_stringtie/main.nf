@@ -9,6 +9,7 @@ workflow BAM_ASSEMBLY_STRINGTIE {
     ref_gtf
     skip_multisample // val
     sample_count // val
+    ref_fai // val: path(genome fai)
 
     main:
     ch_versions = channel.empty()
@@ -43,7 +44,7 @@ workflow BAM_ASSEMBLY_STRINGTIE {
     )
     ch_versions = ch_versions.mix(GFFCOMPARE.out.versions)
     // reannotate gffcompare output with reference IDs
-    REANNOTATEGTF(GFFCOMPARE.out.annotated_gtf)
+    REANNOTATEGTF(GFFCOMPARE.out.annotated_gtf, ref_fai)
     ch_versions = ch_versions.mix(REANNOTATEGTF.out.versions)
 
     emit:

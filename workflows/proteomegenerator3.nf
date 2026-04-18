@@ -7,6 +7,7 @@ include { PREPROCESS_READS                                    } from '../subwork
 include { BAM_ASSEMBLY_BAMBU                                  } from '../subworkflows/local/bam_assembly_bambu/main'
 include { BAM_ASSEMBLY_LRAA                                   } from '../subworkflows/local/bam_assembly_lraa/main'
 include { GFFREAD                                             } from '../modules/nf-core/gffread/main'
+include { SAMTOOLS_FAIDX                                      } from '../modules/nf-core/samtools/faidx/main'
 include { CAT_CAT                                             } from '../modules/nf-core/cat/cat/main'
 include { PREDICT_ORFS                                        } from '../subworkflows/local/predict_orfs/main'
 include { FASTA_MERGE_ANNOTATE                                } from '../subworkflows/local/fasta_merge_annotate/main'
@@ -78,6 +79,9 @@ workflow PROTEOMEGENERATOR3 {
     //
     // Long-read assembly: select assembler
     //
+    // create fai index for filtering erroneously assembled trancripts that don't match reference genome contigs
+    SAMTOOLS_FAIDX(params.fasta)
+    ref_fai = SAMTOOLS_FAIDX.out.fai
     if (params.long_read_assembler == 'bambu') {
         BAM_ASSEMBLY_BAMBU(
             rc_ch,
@@ -99,6 +103,7 @@ workflow PROTEOMEGENERATOR3 {
             sample_count,
             params.gtf,
             params.fasta,
+            ref_fai,
         )
         ch_versions = ch_versions.mix(BAM_ASSEMBLY_LRAA.out.versions)
         assembly_ch = BAM_ASSEMBLY_LRAA.out.gtf.map { meta, gtf -> [meta + [tool: 'lraa'], gtf] }
@@ -109,6 +114,7 @@ workflow PROTEOMEGENERATOR3 {
             params.gtf,
             params.skip_multisample,
             sample_count,
+            ref_fai,
         )
         ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_LR.out.versions)
         assembly_ch = BAM_ASSEMBLY_STRINGTIE_LR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie_lr'], gtf] }
@@ -123,6 +129,7 @@ workflow PROTEOMEGENERATOR3 {
             params.gtf,
             params.skip_multisample,
             sample_count,
+            ref_fai,
         )
         ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_SR.out.versions)
         // combine LR and SR assemblies
