@@ -7,13 +7,13 @@ process LRAA_ASSEMBLY {
     container "us-central1-docker.pkg.dev/methods-dev-lab/lraa/lraa:0.15.0"
 
     input:
-    tuple val(meta), path(bam), path(ref_gtf, stageAs: 'reference.gtf')
+    tuple val(meta), path(bam), path(ref_gtf)
     path ref_genome
 
     output:
-    tuple val(meta), path("${prefix}.gtf"), emit: gtf
-    tuple val(meta), path("${prefix}.quant.expr"), emit: quant
-    tuple val(meta), path("${prefix}.quant.tracking"), emit: tracking
+    tuple val(meta), path("**.gtf"), emit: gtf
+    tuple val(meta), path("**.quant.expr"), emit: quant
+    tuple val(meta), path("**.quant.tracking"), emit: tracking
     path "versions.yml", emit: versions
 
     when:
@@ -26,7 +26,7 @@ process LRAA_ASSEMBLY {
     """
     LRAA \\
         --genome ${ref_genome} \\
-        --gtf    reference.gtf \\
+        --gtf    ${ref_gtf} \\
         --bam    ${bam} \\
         --output_prefix ${prefix} \\
         --num_parallel_contigs ${parallel_contigs} \\
