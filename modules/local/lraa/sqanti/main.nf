@@ -39,7 +39,7 @@ process LRAA_SQANTI {
 
     stub:
     def args = task.ext.args ?: ''
-    prefix = task.ext.prefix ?: "${meta.id}"
+    def prefix = task.ext.prefix ?: "${meta.id}"
     """
     touch ${prefix}.iso_cats.tsv
     touch ${prefix}.iso_cats.summary_counts.tsv
