@@ -22,7 +22,7 @@ process LRAA_ASSEMBLY {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def parallel_contigs = task.cpus / 2
+    def parallel_contigs = task.cpus.intdiv(2)
     """
     LRAA \\
         --genome ${ref_genome} \\

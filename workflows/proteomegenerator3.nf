@@ -79,9 +79,12 @@ workflow PROTEOMEGENERATOR3 {
     //
     // Long-read assembly: select assembler
     //
-    // create fai index for filtering erroneously assembled trancripts that don't match reference genome contigs
-    SAMTOOLS_FAIDX(params.fasta)
-    ref_fai = SAMTOOLS_FAIDX.out.fai
+    if (params.long_read_assembler == "lraa" | params.long_read_assembler == "stringtie") {
+        // create fai index for filtering erroneously assembled trancripts that don't match reference genome contigs
+        SAMTOOLS_FAIDX([[id: 'ref'], params.fasta, []], false)
+        ref_fai = SAMTOOLS_FAIDX.out.fai.map { _meta, fai -> fai }
+    }
+
     if (params.long_read_assembler == 'bambu') {
         BAM_ASSEMBLY_BAMBU(
             rc_ch,

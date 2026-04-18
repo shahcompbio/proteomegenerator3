@@ -73,6 +73,7 @@ p = argparse.ArgumentParser(description="Re-annotate gffcompare GTF with referen
 p.add_argument("gffcmp_results", help="gffcompare-annotated GTF")
 p.add_argument(
     "--reference_fai",
+    required=True,
     help="reference FASTA index (.fai) for filtering out transcripts with exon boundaries that exceed contig span",
 )
 p.add_argument("output_file", help="output re-annotated GTF")
