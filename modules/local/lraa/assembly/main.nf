@@ -11,9 +11,9 @@ process LRAA_ASSEMBLY {
     path ref_genome
 
     output:
-    tuple val(meta), path("**.gtf"), emit: gtf
-    tuple val(meta), path("**.quant.expr"), emit: quant
-    tuple val(meta), path("**.quant.tracking"), emit: tracking
+    tuple val(meta), path("*.gtf"), emit: gtf
+    tuple val(meta), path("*.quant.expr"), emit: quant
+    tuple val(meta), path("*.quant.tracking"), emit: tracking
     path "versions.yml", emit: versions
 
     when:

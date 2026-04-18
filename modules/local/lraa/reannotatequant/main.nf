@@ -12,7 +12,7 @@ process LRAA_REANNOTATEQUANT {
     tuple val(meta), path(quant_expr), path(id_mapping)
 
     output:
-    tuple val(meta), path("${prefix}.reannotated.quant.expr"), emit: quant
+    tuple val(meta), path("*.reannotated.quant.expr"), emit: quant
     path "versions.yml", emit: versions
 
     when:

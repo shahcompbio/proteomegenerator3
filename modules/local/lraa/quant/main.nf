@@ -7,12 +7,12 @@ process LRAA_QUANT {
     container "us-central1-docker.pkg.dev/methods-dev-lab/lraa/lraa:0.15.0"
 
     input:
-    tuple val(meta), path(bam), path(cohort_gtf, stageAs: 'cohort.gtf')
+    tuple val(meta), path(bam), path(gtf)
     path ref_genome
 
     output:
-    tuple val(meta), path("${prefix}.quant.expr"), emit: quant
-    tuple val(meta), path("${prefix}.quant.tracking"), emit: tracking
+    tuple val(meta), path("*.quant.expr"), emit: quant
+    tuple val(meta), path("*.quant.tracking"), emit: tracking
     path "versions.yml", emit: versions
 
     when:
@@ -25,7 +25,7 @@ process LRAA_QUANT {
     LRAA \\
         --quant_only \\
         --genome ${ref_genome} \\
-        --gtf    cohort.gtf \\
+        --gtf    ${gtf} \\
         --bam    ${bam} \\
         --output_prefix ${prefix} \\
         --num_parallel_contigs ${task.cpus} \\

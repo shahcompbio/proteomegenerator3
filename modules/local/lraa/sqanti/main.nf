@@ -13,9 +13,9 @@ process LRAA_SQANTI {
     path ref_gtf
 
     output:
-    tuple val(meta), path("${prefix}.iso_cats.tsv"), emit: tsv
-    tuple val(meta), path("${prefix}.iso_cats.summary_counts.tsv"), emit: summary
-    tuple val(meta), path("${prefix}.iso_cats.summary_counts.pdf"), emit: plot
+    tuple val(meta), path("*.iso_cats.tsv"), emit: tsv
+    tuple val(meta), path("*.iso_cats.summary_counts.tsv"), emit: summary
+    tuple val(meta), path("*.iso_cats.summary_counts.pdf"), emit: plot
     path "versions.yml", emit: versions
 
     when:
@@ -23,7 +23,7 @@ process LRAA_SQANTI {
 
     script:
     def args = task.ext.args ?: ''
-    prefix = task.ext.prefix ?: "${meta.id}"
+    def prefix = task.ext.prefix ?: "${meta.id}"
     """
     SQANTI-like_cats_for_reads_or_isoforms.py \\
         --ref_gtf ${ref_gtf} \\
