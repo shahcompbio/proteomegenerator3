@@ -26,8 +26,8 @@
             },
             "filetype": {
                 "type": "string",
-                "enum": ["bam", "rc_file", "tsv"],
-                "errorMessage": "filetype must be one of: bam, rc_file, tsv"
+                "enum": ["bam", "rc_file", "tsv", "lraa_gtf"],
+                "errorMessage": "filetype must be one of: bam, rc_file, tsv, lraa_gtf"
             },
             "filepath": {
                 "type": "string",
