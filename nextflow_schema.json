@@ -348,6 +348,10 @@
                     "type": "integer",
                     "default": 100,
                     "description": "minimum protein length"
+                },
+                "ignore_strands": {
+                    "type": "boolean",
+                    "description": "ignore transcript strands when predicting ORFs"
                 }
             }
         },
