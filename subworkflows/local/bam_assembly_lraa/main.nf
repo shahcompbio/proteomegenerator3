@@ -1,13 +1,14 @@
 // Transcript assembly and quantification with LRAA
-// Three-stage pipeline: per-sample discovery → cohort merge → per-sample re-quant
+// Single-sample: discovery → reannotate (quant from assembly step)
+// Multi-sample:  discovery → merge → reannotate → re-quant → matrix
 
-include { LRAA_ASSEMBLY                      } from '../../../modules/local/lraa/assembly/main'
-include { LRAA_MERGE                         } from '../../../modules/local/lraa/merge/main'
-include { LRAA_QUANT ; LRAA_QUANT as LRAA_REANNOTATEQUANT } from '../../../modules/local/lraa/quant/main'
-include { LRAA_QUANTMERGE                    } from '../../../modules/local/lraa/quantmerge/main'
-include { LRAA_SQANTI                        } from '../../../modules/local/lraa/sqanti/main'
-include { GFFCOMPARE                         } from '../../../modules/nf-core/gffcompare/main'
-include { REANNOTATEGTF                      } from '../../../modules/local/reannotategtf/main'
+include { LRAA_ASSEMBLY   } from '../../../modules/local/lraa/assembly/main'
+include { LRAA_MERGE      } from '../../../modules/local/lraa/merge/main'
+include { LRAA_QUANT      } from '../../../modules/local/lraa/quant/main'
+include { LRAA_QUANTMERGE } from '../../../modules/local/lraa/quantmerge/main'
+include { LRAA_SQANTI     } from '../../../modules/local/lraa/sqanti/main'
+include { GFFCOMPARE      } from '../../../modules/nf-core/gffcompare/main'
+include { REANNOTATEGTF   } from '../../../modules/local/reannotategtf/main'
 
 workflow BAM_ASSEMBLY_LRAA {
     take:
@@ -62,16 +63,6 @@ workflow BAM_ASSEMBLY_LRAA {
             ref_gtf,
         )
         ch_versions = ch_versions.mix(LRAA_SQANTI.out.versions)
-
-        // re-run quant after reannotation
-        if (!skip_discovery) {
-            // Re-quantify each sample against the reannotated GTF
-            quant_input = bam_ch.combine(
-                REANNOTATEGTF.out.gtf.map { _meta, gtf -> gtf }
-            )
-            LRAA_REANNOTATEQUANT(quant_input, ref_fasta)
-            ch_versions = ch_versions.mix(LRAA_REANNOTATEQUANT.out.versions.first())
-        }
     }
     else {
         // Multi-sample: merge → reannotate → re-quant → matrix assembly
