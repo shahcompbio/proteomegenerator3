@@ -4,7 +4,7 @@ process LRAA_ASSEMBLY {
     label 'process_high'
 
     conda "${moduleDir}/environment.yml"
-    container "us-central1-docker.pkg.dev/methods-dev-lab/lraa/lraa:0.15.0"
+    container "us-central1-docker.pkg.dev/methods-dev-lab/lraa/lraa:0.16.1"
 
     input:
     tuple val(meta), path(bam), path(ref_gtf)
@@ -22,15 +22,13 @@ process LRAA_ASSEMBLY {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def parallel_contigs = task.cpus.intdiv(2)
     """
     LRAA \\
         --genome ${ref_genome} \\
         --gtf    ${ref_gtf} \\
         --bam    ${bam} \\
         --output_prefix ${prefix} \\
-        --num_parallel_contigs ${parallel_contigs} \\
-        --num_threads_per_worker 2 \\
+        --num_parallel_contigs ${task.cpus} \\
         ${args}
 
     cat <<-END_VERSIONS > versions.yml
