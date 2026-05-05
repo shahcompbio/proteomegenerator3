@@ -12,6 +12,8 @@ lint:
   files_unchanged:
     - .github/workflows/linting.yml
     - .github/workflows/linting_comment.yml
+    - .github/workflows/branch.yml
+    - .github/workflows/ci.yml
     - .prettierrc.yml
     - .prettierignore
     - CODE_OF_CONDUCT.md
@@ -31,7 +33,7 @@ template:
   name: proteomegenerator3
   description: Generate proteogenomics search databases from long-read RNAseq
   author: Asher Preska Steinberg
-  version: 1.2.2
+  version: 1.3.0
   force: true
   outdir: .
   is_nfcore: false

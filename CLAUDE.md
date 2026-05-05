@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Basic execution:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.2.2 \
+nextflow run kentsislab/proteomegenerator3 -r 1.3.0 \
   -profile <docker/singularity/.../institute> \
   --input samplesheet.csv \
   --fasta <REF_GENOME> \

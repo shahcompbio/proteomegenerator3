@@ -5,6 +5,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-05-05
+
+### Added
+
+- LRAA (Long Read Assembly and Annotation) as an alternative long-read assembler via `--long_read_assembler lraa`
+- StringTie long-read mode as an alternative long-read assembler via `--long_read_assembler stringtie`
+- CLI parameter `--long_read_assembler` to select the long-read transcript assembler (options: `bambu`, `lraa`, `stringtie`)
+- CLI parameter `--skip_lraa_discovery` to skip LRAA assembly and use pre-computed GTFs from the samplesheet (proceeds directly to merge/reannotate/quantify)
+- Strand-specific ORF prediction with Transdecoder as the default
+- FAI index support for reference genome
+
+### Changed
+
+- CI profile ordering (`docker,test` → ensures test resource limits take precedence on GitHub runners)
+- Updated LRAA to version 0.16.1
+
+### Fixed
+
+- Resource limits not being applied on GitHub runners due to profile ordering
+- Output naming for non-NDR assemblers
+- Glob patterns on LRAA modules
+- Duplicate transcript structures and pruning of transcripts exceeding chromosome boundaries
+- Novel transcript annotation in reannotate GTF
+- Don't re-run quantification on reannotated LRAA GTF
+- Don't run Bambu in preprocessing if not selected as the assembler
+
 ## [1.2.2] - 2026-04-16
 
 ### Added
