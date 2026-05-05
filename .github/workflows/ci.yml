@@ -79,7 +79,7 @@ jobs:
           version: 0.9.2
 
       - name: Run Tests (shard ${{ matrix.shard }}/4)
-        run: nf-test test --profile test,docker --ci --verbose --shard ${{ matrix.shard }}/4
+        run: nf-test test --profile docker,test --ci --verbose --shard ${{ matrix.shard }}/4
 
       - name: Output log on failure
         if: failure()
