@@ -8,6 +8,7 @@ workflow PREPROCESS_READS {
     input_bam_ch // channel: [ val(meta), [ bam ] ]
     filter_reads // boolean; filter reads on mapq and read length
     filter_acc_reads // boolean; filter reads on accessory chromosomes
+    long_read_assembler // string: bambu, lraa, or stringtie
 
     main:
 
@@ -40,17 +41,19 @@ workflow PREPROCESS_READS {
     else {
         ch_bam = input_bam_ch
     }
-    // create read classes with bambu
-    BAMBU_READCLASSES(
-        ch_bam,
-        params.yieldsize,
-        params.fasta,
-        params.gtf,
-    )
-    ch_versions = ch_versions.mix(BAMBU_READCLASSES.out.versions)
+    // create read classes with bambu (only when using bambu assembler)
+    if (long_read_assembler == 'bambu') {
+        BAMBU_READCLASSES(
+            ch_bam,
+            params.yieldsize,
+            params.fasta,
+            params.gtf,
+        )
+        ch_versions = ch_versions.mix(BAMBU_READCLASSES.out.versions)
+    }
 
     emit:
     bam      = ch_bam // channel: [ val(meta), path(bam) ]
-    reads    = BAMBU_READCLASSES.out.rds // channel: [ val(meta), [ rcFile ] ]
+    reads    = long_read_assembler == 'bambu' ? BAMBU_READCLASSES.out.rds : Channel.empty() // channel: [ val(meta), [ rcFile ] ]
     versions = ch_versions // channel: [ versions.yml ]
 }

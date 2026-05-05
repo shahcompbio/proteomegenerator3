@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
+name: "bam_assembly_lraa"
+description: Transcript assembly and quantification with LRAA (discover → merge → re-quant)
+keywords:
+  - transcript-assembly
+  - long-read
+  - lraa
+  - multi-sample
+components:
+  - lraa/assembly
+  - lraa/merge
+  - lraa/quant
+  - lraa/quantmerge
+  - gffcompare
+  - reannotategtf
+
+input:
+  - bam_ch:
+      type: file
+      description: |
+        Channel of per-sample aligned BAMs
+        Structure: [ val(meta), path(bam) ]
+      pattern: "*.bam"
+  - lraa_gtf_ch:
+      type: file
+      description: |
+        Channel of pre-computed per-sample LRAA GTFs (empty when skip_lraa_discovery=false)
+        Structure: [ val(meta), path(gtf) ]
+      pattern: "*.gtf"
+  - skip_multisample:
+      type: boolean
+      description: Skip multi-sample merging
+  - skip_discovery:
+      type: boolean
+      description: Skip per-sample discovery (use pre-computed GTFs)
+  - sample_count:
+      type: integer
+      description: Number of samples in the cohort
+  - ref_gtf_ch:
+      type: file
+      description: Reference annotation GTF
+  - ref_fasta:
+      type: file
+      description: Reference genome FASTA
+
+output:
+  gtf:
+    type: file
+    description: |
+      Assembled transcript GTF (per-sample or merged)
+      Structure: [ val(meta), path(gtf) ]
+    pattern: "*.gtf"
+  quant_matrix:
+    type: file
+    description: |
+      Cohort expression matrix (multi-sample only)
+      Structure: [ val(meta), path(tsv) ]
+    pattern: "*.tsv"
+  versions:
+    type: file
+    description: File containing software versions
+    pattern: "versions.yml"
+
+authors:
+  - "@apsteinberg"
+maintainers:
+  - "@apsteinberg"

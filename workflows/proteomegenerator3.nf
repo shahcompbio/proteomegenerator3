@@ -3,22 +3,26 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-include { PREPROCESS_READS       } from '../subworkflows/local/preprocess_reads/main'
-include { BAM_ASSEMBLY_BAMBU     } from '../subworkflows/local/bam_assembly_bambu/main'
-include { GFFREAD                } from '../modules/nf-core/gffread/main'
-include { CAT_CAT                } from '../modules/nf-core/cat/cat/main'
-include { PREDICT_ORFS           } from '../subworkflows/local/predict_orfs/main'
-include { FASTA_MERGE_ANNOTATE   } from '../subworkflows/local/fasta_merge_annotate/main'
-include { BAM_ASSEMBLY_STRINGTIE } from '../subworkflows/local/bam_assembly_stringtie/main'
-include { MULTIQC                } from '../modules/nf-core/multiqc/main'
-include { paramsSummaryMap       } from 'plugin/nf-schema'
-include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
-include { getLongReadBams        } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
-include { getLongReadRcFiles     } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
-include { getShortReadBams       } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
-include { getFusionTsvs          } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { PREPROCESS_READS                                    } from '../subworkflows/local/preprocess_reads/main'
+include { BAM_ASSEMBLY_BAMBU                                  } from '../subworkflows/local/bam_assembly_bambu/main'
+include { BAM_ASSEMBLY_LRAA                                   } from '../subworkflows/local/bam_assembly_lraa/main'
+include { GFFREAD                                             } from '../modules/nf-core/gffread/main'
+include { SAMTOOLS_FAIDX                                      } from '../modules/nf-core/samtools/faidx/main'
+include { CAT_CAT                                             } from '../modules/nf-core/cat/cat/main'
+include { PREDICT_ORFS                                        } from '../subworkflows/local/predict_orfs/main'
+include { FASTA_MERGE_ANNOTATE                                } from '../subworkflows/local/fasta_merge_annotate/main'
+include { BAM_ASSEMBLY_STRINGTIE as BAM_ASSEMBLY_STRINGTIE_LR } from '../subworkflows/local/bam_assembly_stringtie/main'
+include { BAM_ASSEMBLY_STRINGTIE as BAM_ASSEMBLY_STRINGTIE_SR } from '../subworkflows/local/bam_assembly_stringtie/main'
+include { MULTIQC                                             } from '../modules/nf-core/multiqc/main'
+include { paramsSummaryMap                                    } from 'plugin/nf-schema'
+include { paramsSummaryMultiqc                                } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+include { softwareVersionsToYAML                              } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+include { methodsDescriptionText                              } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getLongReadBams                                     } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getLongReadRcFiles                                  } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getLongReadLraaGtfs                                 } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getShortReadBams                                    } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getFusionTsvs                                       } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -38,6 +42,7 @@ workflow PROTEOMEGENERATOR3 {
     //
     ch_long_read_bams = getLongReadBams(ch_samplesheet)
     ch_long_read_rc = getLongReadRcFiles(ch_samplesheet)
+    ch_long_read_lraa_gtfs = getLongReadLraaGtfs(ch_samplesheet)
     ch_short_read_bams = getShortReadBams(ch_samplesheet)
     ch_fusion_tsvs = getFusionTsvs(ch_samplesheet)
 
@@ -45,7 +50,7 @@ workflow PROTEOMEGENERATOR3 {
     // process long-read rnaseq data
     //
     if (!params.skip_preprocessing) {
-        PREPROCESS_READS(ch_long_read_bams, params.filter_reads, params.filter_acc_reads)
+        PREPROCESS_READS(ch_long_read_bams, params.filter_reads, params.filter_acc_reads, params.long_read_assembler)
         rc_ch = PREPROCESS_READS.out.reads
         bam_ch = PREPROCESS_READS.out.bam
         ch_versions = ch_versions.mix(PREPROCESS_READS.out.versions)
@@ -70,31 +75,68 @@ workflow PROTEOMEGENERATOR3 {
     // run sample assembly & quant with read classes
     // count samples to make sure multisample isn't run on single samples
     sample_count = countSamples(params.input)
-    // run assembly and quant with bambu
-    BAM_ASSEMBLY_BAMBU(
-        rc_ch,
-        params.skip_multisample,
-        sample_count,
-        ch_NDR,
-        ref_gtf_ch,
-        bam_ch,
-    )
-    ch_versions = ch_versions.mix(BAM_ASSEMBLY_BAMBU.out.versions)
-    assembly_ch = BAM_ASSEMBLY_BAMBU.out.gtf.map { meta, gtf -> [meta + [tool: 'bambu'], gtf] }
+
+    //
+    // Long-read assembly: select assembler
+    //
+    if (params.long_read_assembler in ["lraa", "stringtie"] || params.short_reads) {
+        SAMTOOLS_FAIDX([[id: 'ref'], params.fasta, []], false)
+        ref_fai = SAMTOOLS_FAIDX.out.fai.map { _meta, fai -> fai }
+    }
+
+
+    if (params.long_read_assembler == 'bambu') {
+        BAM_ASSEMBLY_BAMBU(
+            rc_ch,
+            params.skip_multisample,
+            sample_count,
+            ch_NDR,
+            ref_gtf_ch,
+            bam_ch,
+        )
+        ch_versions = ch_versions.mix(BAM_ASSEMBLY_BAMBU.out.versions)
+        assembly_ch = BAM_ASSEMBLY_BAMBU.out.gtf.map { meta, gtf -> [meta + [tool: 'bambu'], gtf] }
+    }
+    else if (params.long_read_assembler == 'lraa') {
+        BAM_ASSEMBLY_LRAA(
+            bam_ch,
+            ch_long_read_lraa_gtfs,
+            params.skip_multisample,
+            params.skip_lraa_discovery,
+            sample_count,
+            params.gtf,
+            params.fasta,
+            ref_fai,
+        )
+        ch_versions = ch_versions.mix(BAM_ASSEMBLY_LRAA.out.versions)
+        assembly_ch = BAM_ASSEMBLY_LRAA.out.gtf.map { meta, gtf -> [meta + [tool: 'lraa'], gtf] }
+    }
+    else if (params.long_read_assembler == 'stringtie') {
+        BAM_ASSEMBLY_STRINGTIE_LR(
+            bam_ch,
+            params.gtf,
+            params.skip_multisample,
+            sample_count,
+            ref_fai,
+        )
+        ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_LR.out.versions)
+        assembly_ch = BAM_ASSEMBLY_STRINGTIE_LR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie_lr'], gtf] }
+    }
+
     //
     // process short-read rnaseq data (if provided)
     //
     if (params.short_reads) {
-        // TODO: Implement short-read quantification subworkflow
-        BAM_ASSEMBLY_STRINGTIE(
+        BAM_ASSEMBLY_STRINGTIE_SR(
             ch_short_read_bams,
             params.gtf,
             params.skip_multisample,
             sample_count,
+            ref_fai,
         )
-        ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE.out.versions)
-        // combine bambu and stringtie assemblies
-        stringtie_ch = BAM_ASSEMBLY_STRINGTIE.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie'], gtf] }
+        ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_SR.out.versions)
+        // combine LR and SR assemblies
+        stringtie_ch = BAM_ASSEMBLY_STRINGTIE_SR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie'], gtf] }
         assembly_ch = assembly_ch.mix(stringtie_ch)
     }
     // extract cDNA

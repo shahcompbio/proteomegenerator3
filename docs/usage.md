@@ -43,6 +43,46 @@ PATIENT1,SAMPLE2,long_read,bam,/path/to/sample2.bam
 
 An [example samplesheet](../assets/samplesheet.csv) has been provided with the pipeline.
 
+## Long-read assembler selection
+
+The pipeline supports three long-read transcript assemblers, selected via the `--long_read_assembler` parameter:
+
+| Assembler   | Description                                                                                                          |
+| ----------- | -------------------------------------------------------------------------------------------------------------------- |
+| `bambu`     | (default) Guided and de novo transcript assembly. Supports multi-sample merging, NDR tuning, and read class caching. |
+| `lraa`      | [LRAA](https://github.com/TrinityCTAT/LRAA) for long-read assembly and annotation.                                   |
+| `stringtie` | [StringTie](https://ccb.jhu.edu/software/stringtie/) long-read mode.                                                 |
+
+Example using LRAA:
+
+```bash
+nextflow run kentsislab/proteomegenerator3 \
+   -profile docker \
+   --input samplesheet.csv \
+   --fasta <REF_GENOME> \
+   --gtf <REF_GTF> \
+   --outdir results \
+   --long_read_assembler lraa
+```
+
+To skip LRAA assembly and use pre-computed GTFs (proceeds directly to merge, reannotate, and quantify):
+
+```bash
+nextflow run kentsislab/proteomegenerator3 \
+   -profile docker \
+   --input samplesheet.csv \
+   --fasta <REF_GENOME> \
+   --gtf <REF_GTF> \
+   --outdir results \
+   --long_read_assembler lraa \
+   --skip_lraa_discovery
+```
+
+When using `--skip_lraa_discovery`, your samplesheet must include `lraa_gtf` entries with paths to pre-computed LRAA GTF files.
+
+> [!NOTE]
+> Bambu-specific parameters (`--NDR`, `--recommended_NDR`, `--skip_multisample`, `--skip_preprocessing`) only apply when `--long_read_assembler bambu` is selected.
+
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:

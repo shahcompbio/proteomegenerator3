@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/meta-schema.json
 # # TODO nf-core: Add a description of the module and list keywords
-name: "reannotatestringtie"
+name: "lraa_sqanti"
 description: write your description here
 keywords:
   - sort
@@ -8,7 +8,7 @@ keywords:
   - genomics
 tools:
   ## TODO nf-core: Add a description and other details for the software below
-  - "reannotatestringtie":
+  - "lraa":
       description: ""
       homepage: ""
       documentation: ""
@@ -49,14 +49,14 @@ output:
             - edam: "http://edamontology.org/format_2572" # BAM
             - edam: "http://edamontology.org/format_2573" # CRAM
             - edam: "http://edamontology.org/format_3462" # SAM
-  versions_reannotatestringtie:
+  versions_lraa:
     - - "${task.process}":
           type: string
           description: The name of the process
-      - "reannotatestringtie":
+      - "lraa":
           type: string
           description: The name of the tool
-      - "reannotatestringtie --version":
+      - "lraa --version":
           type: eval
           description: The expression to obtain the version of the tool
 
@@ -65,10 +65,10 @@ topics:
     - - ${task.process}:
           type: string
           description: The name of the process
-      - reannotatestringtie:
+      - lraa:
           type: string
           description: The name of the tool
-      - reannotatestringtie --version:
+      - lraa --version:
           type: eval
           description: The expression to obtain the version of the tool
 authors:
