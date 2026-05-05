@@ -6,6 +6,7 @@ Re-annotate a gffcompare-annotated GTF so that:
 
 Supports --tool stringtie (default) and --tool lraa.
 """
+
 from gtfparse import read_gtf
 import warnings
 
@@ -93,6 +94,9 @@ args = p.parse_args()
 tx_prefix, gene_prefix = TOOL_PREFIXES[args.tool]
 
 gffcmp = read_gtf(args.gffcmp_results)
+# gtfparse may return a Polars DataFrame; convert to Pandas for downstream processing
+if isinstance(gffcmp, polars.DataFrame):
+    gffcmp = gffcmp.to_pandas()
 
 annotatedat = pd.DataFrame()
 id_mapping_rows = []
@@ -105,6 +109,7 @@ reference_fai = pd.read_csv(
     sep="\t",
     header=None,
     names=["seqname", "length", "offset", "linebases", "linewidth"],
+    dtype={"seqname": str},
 )
 reference_lengths = dict(zip(reference_fai["seqname"], reference_fai["length"]))
 df = df[
