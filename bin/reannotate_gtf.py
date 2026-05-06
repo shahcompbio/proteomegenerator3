@@ -112,9 +112,12 @@ reference_fai = pd.read_csv(
     dtype={"seqname": str},
 )
 reference_lengths = dict(zip(reference_fai["seqname"], reference_fai["length"]))
-df = df[
-    df.apply(lambda row: row["end"] <= reference_lengths.get(row["seqname"], 0), axis=1)
-]
+# Find transcript IDs where any feature exceeds contig boundaries
+exceeds_boundary = df[
+    df.apply(lambda row: row["end"] > reference_lengths.get(row["seqname"], 0), axis=1)
+]["transcript_id"].unique()
+# Remove all rows for those transcript IDs
+df = df[~df["transcript_id"].isin(exceeds_boundary)]
 grouped = df.groupby("transcript_id")
 
 # Iterate through each group
