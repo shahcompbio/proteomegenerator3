@@ -406,6 +406,10 @@
         "fusions": {
             "type": "boolean",
             "description": "enable if you have included fusion predictions from CTAT-lr-fusion in the samplesheet"
+        },
+        "skip_qc": {
+            "type": "boolean",
+            "description": "skip QC with nanoplot, picard, and RSEQC"
         }
     }
 }

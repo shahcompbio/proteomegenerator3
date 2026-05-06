@@ -4,6 +4,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 include { PREPROCESS_READS                                    } from '../subworkflows/local/preprocess_reads/main'
+include { BAM_QC                                              } from '../subworkflows/local/bam_qc/main'
 include { BAM_ASSEMBLY_BAMBU                                  } from '../subworkflows/local/bam_assembly_bambu/main'
 include { BAM_ASSEMBLY_LRAA                                   } from '../subworkflows/local/bam_assembly_lraa/main'
 include { GFFREAD                                             } from '../modules/nf-core/gffread/main'
@@ -59,6 +60,12 @@ workflow PROTEOMEGENERATOR3 {
         // Use provided rc_files when skipping preprocessing
         rc_ch = ch_long_read_rc
         bam_ch = ch_long_read_bams
+    }
+    // perform qc on filtered bams
+    if (!params.skip_qc) {
+        BAM_QC(rc_ch, bam_ch)
+        ch_versions = ch_versions.mix(BAM_QC.out.versions)
+        ch_multiqc_files = ch_multiqc_files.mix(BAM_QC.out.multiqc)
     }
     // perform assembly & quantification with bambu
     // make an NDR channel
