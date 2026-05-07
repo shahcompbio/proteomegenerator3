@@ -67,106 +67,109 @@ workflow PROTEOMEGENERATOR3 {
         ch_versions = ch_versions.mix(BAM_QC.out.versions)
         ch_multiqc_files = ch_multiqc_files.mix(BAM_QC.out.multiqc)
     }
-    // perform assembly & quantification with bambu
-    // make an NDR channel
-    if (params.recommended_NDR && params.NDR != null) {
-        ch_NDR = channel.of("DEFAULT", params.NDR)
-    }
-    else if (params.recommended_NDR) {
-        ch_NDR = channel.of("DEFAULT")
-    }
-    else {
-        ch_NDR = channel.of(params.NDR)
-    }
-    ref_gtf_ch = channel.of(params.gtf)
-    // run sample assembly & quant with read classes
-    // count samples to make sure multisample isn't run on single samples
-    sample_count = countSamples(params.input)
+    if (!params.qc_only) {
+        // perform assembly & quantification with bambu
+        // make an NDR channel
+        if (params.recommended_NDR && params.NDR != null) {
+            ch_NDR = channel.of("DEFAULT", params.NDR)
+        }
+        else if (params.recommended_NDR) {
+            ch_NDR = channel.of("DEFAULT")
+        }
+        else {
+            ch_NDR = channel.of(params.NDR)
+        }
+        ref_gtf_ch = channel.of(params.gtf)
+        // run sample assembly & quant with read classes
+        // count samples to make sure multisample isn't run on single samples
+        sample_count = countSamples(params.input)
 
-    //
-    // Long-read assembly: select assembler
-    //
-    if (params.long_read_assembler in ["lraa", "stringtie"] || params.short_reads) {
-        SAMTOOLS_FAIDX([[id: 'ref'], params.fasta, []], false)
-        ref_fai = SAMTOOLS_FAIDX.out.fai.map { _meta, fai -> fai }
-    }
+        //
+        // Long-read assembly: select assembler
+        //
+        if (params.long_read_assembler in ["lraa", "stringtie"] || params.short_reads) {
+            SAMTOOLS_FAIDX([[id: 'ref'], params.fasta, []], false)
+            ref_fai = SAMTOOLS_FAIDX.out.fai.map { _meta, fai -> fai }
+        }
 
 
-    if (params.long_read_assembler == 'bambu') {
-        BAM_ASSEMBLY_BAMBU(
-            rc_ch,
-            params.skip_multisample,
-            sample_count,
-            ch_NDR,
-            ref_gtf_ch,
-            bam_ch,
-        )
-        ch_versions = ch_versions.mix(BAM_ASSEMBLY_BAMBU.out.versions)
-        assembly_ch = BAM_ASSEMBLY_BAMBU.out.gtf.map { meta, gtf -> [meta + [tool: 'bambu'], gtf] }
-    }
-    else if (params.long_read_assembler == 'lraa') {
-        BAM_ASSEMBLY_LRAA(
-            bam_ch,
-            ch_long_read_lraa_gtfs,
-            params.skip_multisample,
-            params.skip_lraa_discovery,
-            sample_count,
-            params.gtf,
-            params.fasta,
-            ref_fai,
-        )
-        ch_versions = ch_versions.mix(BAM_ASSEMBLY_LRAA.out.versions)
-        assembly_ch = BAM_ASSEMBLY_LRAA.out.gtf.map { meta, gtf -> [meta + [tool: 'lraa'], gtf] }
-    }
-    else if (params.long_read_assembler == 'stringtie') {
-        BAM_ASSEMBLY_STRINGTIE_LR(
-            bam_ch,
-            params.gtf,
-            params.skip_multisample,
-            sample_count,
-            ref_fai,
-        )
-        ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_LR.out.versions)
-        assembly_ch = BAM_ASSEMBLY_STRINGTIE_LR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie_lr'], gtf] }
-    }
+        if (params.long_read_assembler == 'bambu') {
+            BAM_ASSEMBLY_BAMBU(
+                rc_ch,
+                params.skip_multisample,
+                sample_count,
+                ch_NDR,
+                ref_gtf_ch,
+                bam_ch,
+            )
+            ch_versions = ch_versions.mix(BAM_ASSEMBLY_BAMBU.out.versions)
+            assembly_ch = BAM_ASSEMBLY_BAMBU.out.gtf.map { meta, gtf -> [meta + [tool: 'bambu'], gtf] }
+        }
+        else if (params.long_read_assembler == 'lraa') {
+            BAM_ASSEMBLY_LRAA(
+                bam_ch,
+                ch_long_read_lraa_gtfs,
+                params.skip_multisample,
+                params.skip_lraa_discovery,
+                sample_count,
+                params.gtf,
+                params.fasta,
+                ref_fai,
+            )
+            ch_versions = ch_versions.mix(BAM_ASSEMBLY_LRAA.out.versions)
+            assembly_ch = BAM_ASSEMBLY_LRAA.out.gtf.map { meta, gtf -> [meta + [tool: 'lraa'], gtf] }
+        }
+        else if (params.long_read_assembler == 'stringtie') {
+            BAM_ASSEMBLY_STRINGTIE_LR(
+                bam_ch,
+                params.gtf,
+                params.skip_multisample,
+                sample_count,
+                ref_fai,
+            )
+            ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_LR.out.versions)
+            assembly_ch = BAM_ASSEMBLY_STRINGTIE_LR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie_lr'], gtf] }
+        }
 
-    //
-    // process short-read rnaseq data (if provided)
-    //
-    if (params.short_reads) {
-        BAM_ASSEMBLY_STRINGTIE_SR(
-            ch_short_read_bams,
-            params.gtf,
+        //
+        // process short-read rnaseq data (if provided)
+        //
+        if (params.short_reads) {
+            BAM_ASSEMBLY_STRINGTIE_SR(
+                ch_short_read_bams,
+                params.gtf,
+                params.skip_multisample,
+                sample_count,
+                ref_fai,
+            )
+            ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_SR.out.versions)
+            // combine LR and SR assemblies
+            stringtie_ch = BAM_ASSEMBLY_STRINGTIE_SR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie'], gtf] }
+            assembly_ch = assembly_ch.mix(stringtie_ch)
+        }
+        // extract cDNA
+        GFFREAD(assembly_ch, params.fasta)
+        ch_versions = ch_versions.mix(GFFREAD.out.versions)
+        // predict ORFs with transdecoder and output fasta for msfragger
+        PREDICT_ORFS(GFFREAD.out.gffread_fasta, params.uniprot_proteome)
+        ch_versions = ch_versions.mix(PREDICT_ORFS.out.versions)
+        // make uniprot-style fasta for msfragger and create index tables
+        ch_orfs = PREDICT_ORFS.out.ORFs
+            .join(assembly_ch, by: 0)
+            .combine(PREDICT_ORFS.out.swissprot.map { _meta, fasta -> fasta })
+        // ch_orfs.view { v -> "ch_orfs: ${v}" }
+        FASTA_MERGE_ANNOTATE(
+            ch_orfs,
+            params.input,
             params.skip_multisample,
-            sample_count,
-            ref_fai,
+            PREDICT_ORFS.out.swissprot,
+            ch_fusion_tsvs,
+            params.fusions,
+            params.short_reads,
         )
-        ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_SR.out.versions)
-        // combine LR and SR assemblies
-        stringtie_ch = BAM_ASSEMBLY_STRINGTIE_SR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie'], gtf] }
-        assembly_ch = assembly_ch.mix(stringtie_ch)
+        ch_versions = ch_versions.mix(FASTA_MERGE_ANNOTATE.out.versions)
     }
-    // extract cDNA
-    GFFREAD(assembly_ch, params.fasta)
-    ch_versions = ch_versions.mix(GFFREAD.out.versions)
-    // predict ORFs with transdecoder and output fasta for msfragger
-    PREDICT_ORFS(GFFREAD.out.gffread_fasta, params.uniprot_proteome)
-    ch_versions = ch_versions.mix(PREDICT_ORFS.out.versions)
-    // make uniprot-style fasta for msfragger and create index tables
-    ch_orfs = PREDICT_ORFS.out.ORFs
-        .join(assembly_ch, by: 0)
-        .combine(PREDICT_ORFS.out.swissprot.map { _meta, fasta -> fasta })
-    // ch_orfs.view { v -> "ch_orfs: ${v}" }
-    FASTA_MERGE_ANNOTATE(
-        ch_orfs,
-        params.input,
-        params.skip_multisample,
-        PREDICT_ORFS.out.swissprot,
-        ch_fusion_tsvs,
-        params.fusions,
-        params.short_reads,
-    )
-    ch_versions = ch_versions.mix(FASTA_MERGE_ANNOTATE.out.versions)
+    // end if (!params.qc_only)
     // collect versions
     softwareVersionsToYAML(ch_versions)
         .collectFile(
