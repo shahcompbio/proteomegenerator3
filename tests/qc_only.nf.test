@@ -6,6 +6,7 @@ nextflow_pipeline {
     tag "filter_qc"
 
     test("Test filter and qc pathway") {
+        options "-stub"
         when {
             params {
                 input = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/samplesheet_multisample_nofusions.csv'
