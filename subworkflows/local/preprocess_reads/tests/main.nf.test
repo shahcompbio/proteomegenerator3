@@ -1,5 +1,3 @@
-// TODO nf-core: Once you have added the required tests, please run the following command to build this file:
-// nf-core subworkflows test preprocess_reads
 nextflow_workflow {
 
     name "Test Subworkflow PREPROCESS_READS"
@@ -7,38 +5,68 @@ nextflow_workflow {
     workflow "PREPROCESS_READS"
 
     tag "subworkflows"
-    tag "subworkflows_"
     tag "subworkflows/preprocess_reads"
-    // TODO nf-core: Add tags for all modules used within this subworkflow. Example:
     tag "samtools"
-    tag "samtools/sort"
     tag "samtools/index"
+    tag "samtools/convert"
 
-
-    // TODO nf-core: Change the test name preferably indicating the test-data and file-format used
-    test("sarscov2 - bam - single_end") {
-
+    test("filter_reads - bam to cram conversion") {
+        options "-stub"
         when {
+            params {
+                fasta = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/reference/Homo_sapiens.GRCh38.dna_sm.primary_assembly_chr9_1_1000000.fa'
+                gtf = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/reference/Homo_sapiens.GRCh38.91_chr9_1_1000000.gtf'
+                mapq = 20
+                read_len = 500
+                yieldsize = 100000
+            }
             workflow {
                 """
-                // TODO nf-core: define inputs of the workflow here. Example:
-                input[0] = [
-                    [ id:'test', single_end:false ], // meta map
+                input[0] = Channel.of([
+                    [ id:'test' ],
                     file(params.modules_testdata_base_path + 'genomics/sarscov2/illumina/bam/test.paired_end.sorted.bam', checkIfExists: true),
-                ]
-                input[1] = [
-                    [ id:'genome' ],
-                    file(params.modules_testdata_base_path + 'genomics/sarscov2/illumina/bam/test.paired_end.sorted.bam', checkIfExists: true),
-                ]
+                ])
+                input[1] = true
+                input[2] = false
+                input[3] = 'bambu'
                 """
             }
         }
 
         then {
             assertAll(
-                { assert workflow.success},
-                { assert snapshot(workflow.out).match()}
-                //TODO nf-core: Add all required assertions to verify the test output.
+                { assert workflow.success },
+                { assert workflow.out.bam },
+                { assert workflow.out.cram },
+            )
+        }
+    }
+
+    test("no filtering - no cram conversion") {
+        options "-stub"
+        when {
+            params {
+                fasta = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/reference/Homo_sapiens.GRCh38.dna_sm.primary_assembly_chr9_1_1000000.fa'
+                gtf = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/reference/Homo_sapiens.GRCh38.91_chr9_1_1000000.gtf'
+                yieldsize = 100000
+            }
+            workflow {
+                """
+                input[0] = Channel.of([
+                    [ id:'test' ],
+                    file(params.modules_testdata_base_path + 'genomics/sarscov2/illumina/bam/test.paired_end.sorted.bam', checkIfExists: true),
+                ])
+                input[1] = false
+                input[2] = false
+                input[3] = 'bambu'
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert workflow.success },
+                { assert workflow.out.bam },
             )
         }
     }
