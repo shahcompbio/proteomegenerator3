@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+"""
+Re-annotate a gffcompare-annotated GTF so that:
+  - exact-match transcripts (class_code '=') recover their reference ENST / ENSG IDs
+  - novel transcripts get a tool-specific prefix (e.g. StrgTx / LraaTx)
+
+Supports --tool stringtie (default) and --tool lraa.
+"""
 from gtfparse import read_gtf
 import warnings
 
@@ -12,7 +19,7 @@ import polars
 from pathlib import Path
 import typing as t
 from typing import Union
-import sys
+import argparse
 
 COMMONS_COL = [
     "seqname",
@@ -25,13 +32,22 @@ COMMONS_COL = [
     "frame",
 ]
 
+# Tool → (novel transcript prefix, novel gene prefix)
+TOOL_PREFIXES = {
+    "stringtie": ("StrgTx", "StrgGene"),
+    "lraa": ("LraaTx", "LraaGene"),
+}
+
 
 def write_gtf(
-    df: polars.DataFrame, export_path: Union[str, Path], headers: t.List[str] = None
+    df: polars.DataFrame,
+    export_path: Union[str, Path],
+    tool: str,
+    headers: t.List[str] = None,
 ):
     headers = headers or []
     with open(export_path, "w") as f:
-        f.write(f"# re-annotated gtf of merged transcripts from StringTie\n")
+        f.write(f"# re-annotated gtf of merged transcripts from {tool}\n")
         f.write(f"###\n")
         for header in headers:
             f.write(f"{header}\n")
@@ -53,11 +69,20 @@ def custom_fields(row) -> str:
     )
 
 
-## inputs
-gffcmp_results = sys.argv[1]
-output_file = sys.argv[2]
+p = argparse.ArgumentParser(description="Re-annotate gffcompare GTF with reference IDs")
+p.add_argument("gffcmp_results", help="gffcompare-annotated GTF")
+p.add_argument("output_file", help="output re-annotated GTF")
+p.add_argument(
+    "--tool",
+    choices=list(TOOL_PREFIXES.keys()),
+    default="stringtie",
+    help="assembler tool (determines novel transcript/gene prefix)",
+)
+args = p.parse_args()
 
-gffcmp = read_gtf(gffcmp_results)
+tx_prefix, gene_prefix = TOOL_PREFIXES[args.tool]
+
+gffcmp = read_gtf(args.gffcmp_results)
 
 annotatedat = pd.DataFrame()
 df = gffcmp
@@ -67,7 +92,6 @@ df["strand"] = df["strand"].apply(lambda x: x if x in ["+", "-"] else ".")
 print(set(df["strand"]))
 grouped = df.groupby("transcript_id")
 
-# Get the total number of groups for tqdm
 # Iterate through each group
 i = 1
 for transcript_id, group_df in grouped:
@@ -76,16 +100,16 @@ for transcript_id, group_df in grouped:
     if not ref_gene == "":
         group_df["gene_id"] = ref_gene
     else:
-        group_df["gene_id"] = "StrgGene%d" % i
+        group_df["gene_id"] = "%s%d" % (gene_prefix, i)
     ### rename transcripts so exact matches are given known ids and those which are not
-    ### are given a stringtie id
+    ### are given a tool-specific novel id
     class_code = list(group_df["class_code"])[0]
     tx_id = list(group_df["cmp_ref"])[0]
     if class_code == "=":
         group_df["transcript_id"] = tx_id
     else:
-        group_df["transcript_id"] = "StrgTx%d" % i
+        group_df["transcript_id"] = "%s%d" % (tx_prefix, i)
     annotatedat = pd.concat([annotatedat, group_df])
     i = i + 1
 
-write_gtf(annotatedat, output_file)
+write_gtf(annotatedat, args.output_file, args.tool)
