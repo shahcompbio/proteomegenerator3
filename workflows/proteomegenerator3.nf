@@ -148,12 +148,12 @@ workflow PROTEOMEGENERATOR3 {
             assembly_ch = assembly_ch.mix(stringtie_ch)
         }
         // merge assemblers if more than one was run
-        if (params.long_read_assembler.split(',').size() > 1 || (params.short_reads && params.long_read_assembler.split(',').size() > 0)) {
-            merge_ch = assembly_ch
-                .map { meta, gtf -> [meta.id, meta, gtf] }
-                .groupTuple(by: 0)
-                .map { id, }
-        }
+        // if (params.long_read_assembler.split(',').size() > 1 || (params.short_reads && params.long_read_assembler.split(',').size() > 0)) {
+        //     merge_ch = assembly_ch
+        //         .map { meta, gtf -> [meta.id, meta, gtf] }
+        //         .groupTuple(by: 0)
+        //         .map { id, }
+        // }
         // extract cDNA
         GFFREAD(assembly_ch, params.fasta)
         ch_versions = ch_versions.mix(GFFREAD.out.versions)
