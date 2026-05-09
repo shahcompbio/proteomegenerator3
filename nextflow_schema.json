@@ -231,10 +231,10 @@
                 }
             }
         },
-        "read_filtering": {
-            "title": "Read filtering",
+        "read_filtering_and_qc": {
+            "title": "Read filtering and QC",
             "type": "object",
-            "description": "pre-filter reads before assembly",
+            "description": "pre-filter reads and perform QC before assembly",
             "default": "",
             "properties": {
                 "filter_reads": {
@@ -254,6 +254,14 @@
                 "filter_acc_reads": {
                     "type": "boolean",
                     "description": "filter reads on accessory chromosomes; sometimes causes issues for bambu"
+                },
+                "skip_qc": {
+                    "type": "boolean",
+                    "description": "skip QC with nanoplot, picard, and RSEQC"
+                },
+                "qc_only": {
+                    "type": "boolean",
+                    "description": "Run only read filtering and QC (skip assembly and ORF prediction)"
                 }
             }
         },
@@ -387,7 +395,7 @@
             "$ref": "#/$defs/generic_options"
         },
         {
-            "$ref": "#/$defs/read_filtering"
+            "$ref": "#/$defs/read_filtering_and_qc"
         },
         {
             "$ref": "#/$defs/long_read_transcript_assembly"

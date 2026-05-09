@@ -24,12 +24,13 @@
 
 1. Pre-processing of aligned reads to create transcript read classes with [bambu](https://github.com/GoekeLab/bambu) which can be re-used in future analyses. Optional filtering:
    1. Filtering on MAPQ and read length with [samtools](https://www.htslib.org/)
-2. Transcript assembly, quantification, and filtering with [bambu](https://github.com/GoekeLab/bambu). Option to merge multiple samples into a unified transcriptome.
-3. ORF prediction with [Transdecoder](https://github.com/TransDecoder/TransDecoder).
-4. Formatting of ORFs into a UniProt-style fasta file which can be used for computational proteomics searchs with [Fragpipe](https://fragpipe.nesvilab.org/), [DIA-NN](https://github.com/vdemichev/DiaNN), [Spectronaut](https://biognosys.com/software/spectronaut/).
-5. Concatenation of sample-specific proteome fasta produced in #4 with a UniProt proteome of the user's choice to allow for spectra to compete between non-canonical and canonical proteoforms.
-6. Deduplication of sequences and basic statistics with [seqkit](https://bioinf.shenwei.me/seqkit/usage/#quick-guide)
-7. MultiQC to collate package versions used ([`MultiQC`](http://multiqc.info/))
+2. BAM quality control with [Samtools Stats](https://www.htslib.org/), [NanoPlot](https://github.com/wdecoster/NanoPlot), [RSeQC](https://rseqc.sourceforge.net/), and [Picard CollectRnaSeqMetrics](https://broadinstitute.github.io/picard/). Can be run standalone with `--qc_only` or skipped with `--skip_qc`.
+3. Transcript assembly, quantification, and filtering with [bambu](https://github.com/GoekeLab/bambu). Option to merge multiple samples into a unified transcriptome.
+4. ORF prediction with [Transdecoder](https://github.com/TransDecoder/TransDecoder).
+5. Formatting of ORFs into a UniProt-style fasta file which can be used for computational proteomics searchs with [Fragpipe](https://fragpipe.nesvilab.org/), [DIA-NN](https://github.com/vdemichev/DiaNN), [Spectronaut](https://biognosys.com/software/spectronaut/).
+6. Concatenation of sample-specific proteome fasta produced in #5 with a UniProt proteome of the user's choice to allow for spectra to compete between non-canonical and canonical proteoforms.
+7. Deduplication of sequences and basic statistics with [seqkit](https://bioinf.shenwei.me/seqkit/usage/#quick-guide)
+8. MultiQC to collate QC metrics and package versions ([`MultiQC`](http://multiqc.info/))
 
 ## Usage
 
@@ -201,6 +202,8 @@ I have highlighted the following options here:
 16. `min_stringtie_tpm`: minimum TPM for StringTie transcript merging [default: 1.0]
 17. `long_read_assembler`: select the long-read transcript assembler [default: bambu]. Options: `bambu`, `lraa`, `stringtie`.
 18. `skip_lraa_discovery`: skip LRAA assembly and use pre-computed GTFs from the samplesheet (proceeds directly to merge, reannotate, and quantify) [default: false]
+19. `qc_only`: run only read filtering and QC, skipping assembly and ORF prediction [default: false]
+20. `skip_qc`: skip the QC subworkflow (Samtools Stats, NanoPlot, RSeQC, Picard) entirely [default: false]
 
 ## Credits
 

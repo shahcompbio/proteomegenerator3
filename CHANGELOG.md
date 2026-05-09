@@ -5,6 +5,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- BAM QC subworkflow (`BAM_QC`) with Samtools Stats, NanoPlot, RSeQC bamstat, and Picard CollectRnaSeqMetrics
+- CLI parameter `--qc_only` to run only read filtering and QC (skips assembly and ORF prediction)
+- CLI parameter `--skip_qc` to skip the QC subworkflow entirely
+- CRAM output for filtered reads to reduce storage footprint
+- QC outputs integrated into MultiQC report
+- nf-test for QC-only workflow (`qc_only.nf.test`)
+
 ## [1.3.0] - 2026-05-05
 
 ### Added
