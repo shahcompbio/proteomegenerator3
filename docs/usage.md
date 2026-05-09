@@ -83,6 +83,25 @@ When using `--skip_lraa_discovery`, your samplesheet must include `lraa_gtf` ent
 > [!NOTE]
 > Bambu-specific parameters (`--NDR`, `--recommended_NDR`, `--skip_multisample`, `--skip_preprocessing`) only apply when `--long_read_assembler bambu` is selected.
 
+## QC-only mode
+
+To run only read filtering and quality control without proceeding to transcript assembly or ORF prediction, use the `--qc_only` flag. This is useful for evaluating data quality before committing to a full pipeline run.
+
+```bash
+nextflow run kentsislab/proteomegenerator3 \
+   -profile docker \
+   --input samplesheet.csv \
+   --fasta <REF_GENOME> \
+   --gtf <REF_GTF> \
+   --outdir results \
+   --filter_reads \
+   --qc_only
+```
+
+QC is performed by the BAM QC subworkflow, which runs Samtools Stats, NanoPlot, RSeQC bamstat, and Picard CollectRnaSeqMetrics on each sample. Results are published under `qc/` and aggregated into the MultiQC report.
+
+To skip QC when running the full pipeline, use `--skip_qc`.
+
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:
