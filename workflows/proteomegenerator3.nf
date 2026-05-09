@@ -93,7 +93,7 @@ workflow PROTEOMEGENERATOR3 {
         }
 
 
-        if (params.long_read_assembler == 'bambu') {
+        if (params.long_read_assembler.split(',').contains('bambu')) {
             BAM_ASSEMBLY_BAMBU(
                 rc_ch,
                 params.skip_multisample,
@@ -105,7 +105,7 @@ workflow PROTEOMEGENERATOR3 {
             ch_versions = ch_versions.mix(BAM_ASSEMBLY_BAMBU.out.versions)
             assembly_ch = BAM_ASSEMBLY_BAMBU.out.gtf.map { meta, gtf -> [meta + [tool: 'bambu'], gtf] }
         }
-        else if (params.long_read_assembler == 'lraa') {
+        if (params.long_read_assembler.split(',').contains('lraa')) {
             BAM_ASSEMBLY_LRAA(
                 bam_ch,
                 ch_long_read_lraa_gtfs,
@@ -119,7 +119,7 @@ workflow PROTEOMEGENERATOR3 {
             ch_versions = ch_versions.mix(BAM_ASSEMBLY_LRAA.out.versions)
             assembly_ch = BAM_ASSEMBLY_LRAA.out.gtf.map { meta, gtf -> [meta + [tool: 'lraa'], gtf] }
         }
-        else if (params.long_read_assembler == 'stringtie') {
+        if (params.long_read_assembler.split(',').contains('stringtie')) {
             BAM_ASSEMBLY_STRINGTIE_LR(
                 bam_ch,
                 params.gtf,
@@ -146,6 +146,13 @@ workflow PROTEOMEGENERATOR3 {
             // combine LR and SR assemblies
             stringtie_ch = BAM_ASSEMBLY_STRINGTIE_SR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie'], gtf] }
             assembly_ch = assembly_ch.mix(stringtie_ch)
+        }
+        // merge assemblers if more than one was run
+        if (params.long_read_assembler.split(',').size() > 1 || (params.short_reads && params.long_read_assembler.split(',').size() > 0)) {
+            merge_ch = assembly_ch
+                .map { meta, gtf -> [meta.id, meta, gtf] }
+                .groupTuple(by: 0)
+                .map { id, }
         }
         // extract cDNA
         GFFREAD(assembly_ch, params.fasta)
