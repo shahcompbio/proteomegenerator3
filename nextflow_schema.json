@@ -274,8 +274,8 @@
                 "long_read_assembler": {
                     "type": "string",
                     "default": "bambu",
-                    "enum": ["bambu", "lraa", "stringtie"],
-                    "description": "Long-read transcript assembler to use"
+                    "pattern": "^(bambu|lraa|stringtie)(,(bambu|lraa|stringtie))*$",
+                    "description": "Long-read transcript assembler(s) to use. Comma-separated for multiple (e.g. 'bambu,lraa,stringtie')."
                 },
                 "skip_lraa_discovery": {
                     "type": "boolean",
@@ -304,7 +304,7 @@
                 },
                 "yieldsize": {
                     "type": "number",
-                    "default": 100000,
+                    "default": 100000.0,
                     "description": "Number of reads to process; lower helps with memory"
                 },
                 "recommended_NDR": {
@@ -313,7 +313,7 @@
                 },
                 "min_lr_cts": {
                     "type": "number",
-                    "default": 1,
+                    "default": 1.0,
                     "description": "min full-length read count for detected transcripts"
                 }
             }
@@ -375,7 +375,7 @@
                 },
                 "min_stringtie_tpm": {
                     "type": "number",
-                    "default": 1,
+                    "default": 1.0,
                     "description": "if merging across samples, min TPM for detected transcript"
                 }
             }
