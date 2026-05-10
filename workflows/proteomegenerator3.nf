@@ -9,9 +9,9 @@ include { BAM_ASSEMBLY_BAMBU                                  } from '../subwork
 include { BAM_ASSEMBLY_LRAA                                   } from '../subworkflows/local/bam_assembly_lraa/main'
 include { GFFREAD                                             } from '../modules/nf-core/gffread/main'
 include { SAMTOOLS_FAIDX                                      } from '../modules/nf-core/samtools/faidx/main'
-include { CAT_CAT                                             } from '../modules/nf-core/cat/cat/main'
 include { PREDICT_ORFS                                        } from '../subworkflows/local/predict_orfs/main'
 include { FASTA_MERGE_ANNOTATE                                } from '../subworkflows/local/fasta_merge_annotate/main'
+include { GTF_MERGE_ANNOTATE                                  } from '../subworkflows/local/gtf_merge_annotate/main'
 include { BAM_ASSEMBLY_STRINGTIE as BAM_ASSEMBLY_STRINGTIE_LR } from '../subworkflows/local/bam_assembly_stringtie/main'
 include { BAM_ASSEMBLY_STRINGTIE as BAM_ASSEMBLY_STRINGTIE_SR } from '../subworkflows/local/bam_assembly_stringtie/main'
 include { MULTIQC                                             } from '../modules/nf-core/multiqc/main'
@@ -69,11 +69,8 @@ workflow PROTEOMEGENERATOR3 {
     }
     if (!params.qc_only) {
         // perform assembly & quantification with bambu
-        // make an NDR channel
-        if (params.recommended_NDR && params.NDR != null) {
-            ch_NDR = channel.of("DEFAULT", params.NDR)
-        }
-        else if (params.recommended_NDR) {
+        // make an NDR channel (single value only)
+        if (params.recommended_NDR) {
             ch_NDR = channel.of("DEFAULT")
         }
         else {
@@ -87,11 +84,10 @@ workflow PROTEOMEGENERATOR3 {
         //
         // Long-read assembly: select assembler
         //
-        if (params.long_read_assembler in ["lraa", "stringtie"] || params.short_reads) {
-            SAMTOOLS_FAIDX([[id: 'ref'], params.fasta, []], false)
-            ref_fai = SAMTOOLS_FAIDX.out.fai.map { _meta, fai -> fai }
-        }
+        SAMTOOLS_FAIDX([[id: 'ref'], params.fasta, []], false)
+        ref_fai = SAMTOOLS_FAIDX.out.fai.map { _meta, fai -> fai }
 
+        assembly_ch = Channel.empty()
 
         if (params.long_read_assembler.split(',').contains('bambu')) {
             BAM_ASSEMBLY_BAMBU(
@@ -103,7 +99,7 @@ workflow PROTEOMEGENERATOR3 {
                 bam_ch,
             )
             ch_versions = ch_versions.mix(BAM_ASSEMBLY_BAMBU.out.versions)
-            assembly_ch = BAM_ASSEMBLY_BAMBU.out.gtf.map { meta, gtf -> [meta + [tool: 'bambu'], gtf] }
+            assembly_ch = assembly_ch.mix(BAM_ASSEMBLY_BAMBU.out.gtf.map { meta, gtf -> [meta + [tool: 'bambu'], gtf] })
         }
         if (params.long_read_assembler.split(',').contains('lraa')) {
             BAM_ASSEMBLY_LRAA(
@@ -117,7 +113,7 @@ workflow PROTEOMEGENERATOR3 {
                 ref_fai,
             )
             ch_versions = ch_versions.mix(BAM_ASSEMBLY_LRAA.out.versions)
-            assembly_ch = BAM_ASSEMBLY_LRAA.out.gtf.map { meta, gtf -> [meta + [tool: 'lraa'], gtf] }
+            assembly_ch = assembly_ch.mix(BAM_ASSEMBLY_LRAA.out.gtf.map { meta, gtf -> [meta + [tool: 'lraa'], gtf] })
         }
         if (params.long_read_assembler.split(',').contains('stringtie')) {
             BAM_ASSEMBLY_STRINGTIE_LR(
@@ -128,7 +124,7 @@ workflow PROTEOMEGENERATOR3 {
                 ref_fai,
             )
             ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_LR.out.versions)
-            assembly_ch = BAM_ASSEMBLY_STRINGTIE_LR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie_lr'], gtf] }
+            assembly_ch = assembly_ch.mix(BAM_ASSEMBLY_STRINGTIE_LR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie_lr'], gtf] })
         }
 
         //
@@ -147,24 +143,26 @@ workflow PROTEOMEGENERATOR3 {
             stringtie_ch = BAM_ASSEMBLY_STRINGTIE_SR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie'], gtf] }
             assembly_ch = assembly_ch.mix(stringtie_ch)
         }
-        // merge assemblers if more than one was run
-        // if (params.long_read_assembler.split(',').size() > 1 || (params.short_reads && params.long_read_assembler.split(',').size() > 0)) {
-        //     merge_ch = assembly_ch
-        //         .map { meta, gtf -> [meta.id, meta, gtf] }
-        //         .groupTuple(by: 0)
-        //         .map { id, }
-        // }
-        // extract cDNA
-        GFFREAD(assembly_ch, params.fasta)
+        //
+        // Merge assembler GTFs into consensus assembly
+        //
+        GTF_MERGE_ANNOTATE(assembly_ch, params.gtf, ref_fai)
+        ch_versions = ch_versions.mix(GTF_MERGE_ANNOTATE.out.versions)
+        merged_gtf_ch = GTF_MERGE_ANNOTATE.out.gtf
+
+        //
+        // Downstream: single merged path
+        //
+        // Extract cDNA from merged GTF
+        GFFREAD(merged_gtf_ch, params.fasta)
         ch_versions = ch_versions.mix(GFFREAD.out.versions)
-        // predict ORFs with transdecoder and output fasta for msfragger
+        // Predict ORFs with transdecoder
         PREDICT_ORFS(GFFREAD.out.gffread_fasta, params.uniprot_proteome)
         ch_versions = ch_versions.mix(PREDICT_ORFS.out.versions)
-        // make uniprot-style fasta for msfragger and create index tables
+        // Make uniprot-style fasta for msfragger and create index tables
         ch_orfs = PREDICT_ORFS.out.ORFs
-            .join(assembly_ch, by: 0)
+            .join(merged_gtf_ch, by: 0)
             .combine(PREDICT_ORFS.out.swissprot.map { _meta, fasta -> fasta })
-        // ch_orfs.view { v -> "ch_orfs: ${v}" }
         FASTA_MERGE_ANNOTATE(
             ch_orfs,
             params.input,
@@ -172,7 +170,6 @@ workflow PROTEOMEGENERATOR3 {
             PREDICT_ORFS.out.swissprot,
             ch_fusion_tsvs,
             params.fusions,
-            params.short_reads,
         )
         ch_versions = ch_versions.mix(FASTA_MERGE_ANNOTATE.out.versions)
     }

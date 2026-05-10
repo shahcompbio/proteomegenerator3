@@ -37,6 +37,7 @@ COMMONS_COL = [
 TOOL_PREFIXES = {
     "stringtie": ("StrgTx", "StrgGene"),
     "lraa": ("LraaTx", "LraaGene"),
+    "merged": ("NovelTx", "NovelGene"),
 }
 
 
