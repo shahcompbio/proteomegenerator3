@@ -170,7 +170,7 @@ Samplesheet CSV with long-format (one row per file):
 | `subject_id`    | Yes      | String (no spaces)                  | Subject/patient identifier |
 | `sample_id`     | Yes      | String (no spaces)                  | Sample identifier          |
 | `sequence_type` | Yes      | `long_read`, `short_read`, `fusion` | Data modality              |
-| `filetype`      | Yes      | `bam`, `rc_file`, `tsv`             | File format                |
+| `filetype`      | Yes      | `bam`, `cram`, `rc_file`, `tsv`     | File format                |
 | `filepath`      | Yes      | File path                           | Path to the file           |
 
 **Example:**
@@ -180,12 +180,13 @@ subject_id,sample_id,sequence_type,filetype,filepath
 PATIENT1,SAMPLE1,long_read,bam,/path/to/sample1.bam
 PATIENT1,SAMPLE1,long_read,rc_file,/path/to/sample1.rds
 PATIENT1,SAMPLE1,fusion,tsv,/path/to/sample1_fusions.tsv
-PATIENT1,SAMPLE2,long_read,bam,/path/to/sample2.bam
+PATIENT1,SAMPLE2,long_read,cram,/path/to/sample2.cram
 ```
 
 **Validation Rules:**
 
-- Every sample MUST have at least one `long_read` + `bam` entry
+- Every sample MUST have at least one `long_read` + `bam` or `long_read` + `cram` entry
+- `cram` entries are automatically converted to BAM; requires `--fasta`
 - `rc_file` filetype only valid with `sequence_type: long_read`
 - `fusion` entries only processed when `--fusions` flag is enabled
 - `short_read` entries only processed when `--short_reads` flag is enabled

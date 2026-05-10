@@ -9,6 +9,7 @@ include { BAM_ASSEMBLY_BAMBU                                  } from '../subwork
 include { BAM_ASSEMBLY_LRAA                                   } from '../subworkflows/local/bam_assembly_lraa/main'
 include { GFFREAD                                             } from '../modules/nf-core/gffread/main'
 include { SAMTOOLS_FAIDX                                      } from '../modules/nf-core/samtools/faidx/main'
+include { SAMTOOLS_CONVERT as CRAM_TO_BAM                     } from '../modules/nf-core/samtools/convert/main'
 include { PREDICT_ORFS                                        } from '../subworkflows/local/predict_orfs/main'
 include { FASTA_MERGE_ANNOTATE                                } from '../subworkflows/local/fasta_merge_annotate/main'
 include { GTF_MERGE_ANNOTATE                                  } from '../subworkflows/local/gtf_merge_annotate/main'
@@ -24,6 +25,7 @@ include { getLongReadRcFiles                                  } from '../subwork
 include { getLongReadLraaGtfs                                 } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
 include { getShortReadBams                                    } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
 include { getFusionTsvs                                       } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getLongReadCrams                                    } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -42,10 +44,24 @@ workflow PROTEOMEGENERATOR3 {
     // Extract typed channels from long-format samplesheet
     //
     ch_long_read_bams = getLongReadBams(ch_samplesheet)
+    ch_long_read_crams = getLongReadCrams(ch_samplesheet)
     ch_long_read_rc = getLongReadRcFiles(ch_samplesheet)
     ch_long_read_lraa_gtfs = getLongReadLraaGtfs(ch_samplesheet)
     ch_short_read_bams = getShortReadBams(ch_samplesheet)
     ch_fusion_tsvs = getFusionTsvs(ch_samplesheet)
+
+    //
+    // Convert CRAM inputs to BAM (if any)
+    //
+    SAMTOOLS_FAIDX([[id: 'ref'], params.fasta, []], false)
+    ref_fai = SAMTOOLS_FAIDX.out.fai.map { _meta, fai -> fai }
+    ref_fasta_fai = SAMTOOLS_FAIDX.out.fai.map { _meta, fai -> [[id: 'ref'], file(params.fasta), fai] }
+
+    CRAM_TO_BAM(
+        ch_long_read_crams.map { meta, cram -> [meta, cram, []] },
+        ref_fasta_fai,
+    )
+    ch_long_read_bams = ch_long_read_bams.mix(CRAM_TO_BAM.out.bam)
 
     //
     // process long-read rnaseq data
@@ -84,9 +100,6 @@ workflow PROTEOMEGENERATOR3 {
         //
         // Long-read assembly: select assembler
         //
-        SAMTOOLS_FAIDX([[id: 'ref'], params.fasta, []], false)
-        ref_fai = SAMTOOLS_FAIDX.out.fai.map { _meta, fai -> fai }
-
         assembly_ch = Channel.empty()
 
         if (params.long_read_assembler.split(',').contains('bambu')) {

@@ -259,6 +259,19 @@ def getLongReadBams(ch_samplesheet) {
 }
 
 //
+// Extract long-read CRAM channel from parsed samplesheet
+//
+def getLongReadCrams(ch_samplesheet) {
+    return ch_samplesheet
+        .filter { meta, sequence_type, filetype, filepath ->
+            sequence_type == 'long_read' && filetype == 'cram'
+        }
+        .map { meta, sequence_type, filetype, filepath ->
+            tuple(meta, file(filepath))
+        }
+}
+
+//
 // Extract long-read rc_file channel from parsed samplesheet
 //
 def getLongReadRcFiles(ch_samplesheet) {

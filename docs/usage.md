@@ -23,7 +23,7 @@ subject_id,sample_id,sequence_type,filetype,filepath
 PATIENT1,SAMPLE1,long_read,bam,/path/to/sample1.bam
 PATIENT1,SAMPLE1,long_read,rc_file,/path/to/sample1.rds
 PATIENT1,SAMPLE1,fusion,tsv,/path/to/sample1_fusions.tsv
-PATIENT1,SAMPLE2,long_read,bam,/path/to/sample2.bam
+PATIENT1,SAMPLE2,long_read,cram,/path/to/sample2.cram
 ```
 
 | Column          | Required | Values                              | Description                |
@@ -31,12 +31,13 @@ PATIENT1,SAMPLE2,long_read,bam,/path/to/sample2.bam
 | `subject_id`    | Yes      | String (no spaces)                  | Subject/patient identifier |
 | `sample_id`     | Yes      | String (no spaces)                  | Sample identifier          |
 | `sequence_type` | Yes      | `long_read`, `short_read`, `fusion` | Data modality              |
-| `filetype`      | Yes      | `bam`, `rc_file`, `tsv`             | File format                |
+| `filetype`      | Yes      | `bam`, `cram`, `rc_file`, `tsv`     | File format                |
 | `filepath`      | Yes      | File path                           | Path to the file           |
 
 **Requirements:**
 
-- Every sample MUST have at least one `long_read` + `bam` entry
+- Every sample MUST have at least one `long_read` + `bam` or `long_read` + `cram` entry
+- `cram` entries are automatically converted to BAM before processing; requires `--fasta` to be set
 - `rc_file` entries are optional; use with `--skip_preprocessing` flag to speed up runtime by reusing Bambu read classes from previous runs
 - `fusion` entries require the `--fusions` flag to be processed
 - `short_read` entries require the `--short_reads` flag to be processed
