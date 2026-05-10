@@ -144,24 +144,31 @@ workflow PROTEOMEGENERATOR3 {
             assembly_ch = assembly_ch.mix(stringtie_ch)
         }
         //
-        // Merge assembler GTFs into consensus assembly
+        // Merge assembler GTFs into consensus assembly (only when multiple assemblers)
         //
-        GTF_MERGE_ANNOTATE(assembly_ch, params.gtf, ref_fai)
-        ch_versions = ch_versions.mix(GTF_MERGE_ANNOTATE.out.versions)
-        merged_gtf_ch = GTF_MERGE_ANNOTATE.out.gtf
+        def assembler_count = params.long_read_assembler.split(',').size() + (params.short_reads ? 1 : 0)
+        if (assembler_count > 1) {
+            GTF_MERGE_ANNOTATE(assembly_ch, params.gtf, ref_fai)
+            ch_versions = ch_versions.mix(GTF_MERGE_ANNOTATE.out.versions)
+            downstream_gtf_ch = GTF_MERGE_ANNOTATE.out.gtf
+        }
+        else {
+            // Single assembler: use its GTF directly (already annotated)
+            downstream_gtf_ch = assembly_ch
+        }
 
         //
-        // Downstream: single merged path
+        // Downstream: single path
         //
-        // Extract cDNA from merged GTF
-        GFFREAD(merged_gtf_ch, params.fasta)
+        // Extract cDNA
+        GFFREAD(downstream_gtf_ch, params.fasta)
         ch_versions = ch_versions.mix(GFFREAD.out.versions)
         // Predict ORFs with transdecoder
         PREDICT_ORFS(GFFREAD.out.gffread_fasta, params.uniprot_proteome)
         ch_versions = ch_versions.mix(PREDICT_ORFS.out.versions)
         // Make uniprot-style fasta for msfragger and create index tables
         ch_orfs = PREDICT_ORFS.out.ORFs
-            .join(merged_gtf_ch, by: 0)
+            .join(downstream_gtf_ch, by: 0)
             .combine(PREDICT_ORFS.out.swissprot.map { _meta, fasta -> fasta })
         FASTA_MERGE_ANNOTATE(
             ch_orfs,
