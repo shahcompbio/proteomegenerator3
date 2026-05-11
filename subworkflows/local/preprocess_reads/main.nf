@@ -57,7 +57,7 @@ workflow PREPROCESS_READS {
         ch_cram = SAMTOOLS_CONVERT.out.cram
     }
     // create read classes with bambu (only when using bambu assembler)
-    if (long_read_assembler == 'bambu') {
+    if (long_read_assembler.split(',').contains('bambu')) {
         BAMBU_READCLASSES(
             ch_bam,
             params.yieldsize,
@@ -70,6 +70,6 @@ workflow PREPROCESS_READS {
     emit:
     bam      = ch_bam // channel: [ val(meta), path(bam) ]
     cram     = ch_cram // channel: [ val(meta), path(cram) ]
-    reads    = long_read_assembler == 'bambu' ? BAMBU_READCLASSES.out.rds : Channel.empty() // channel: [ val(meta), [ rcFile ] ]
+    reads    = long_read_assembler.split(',').contains('bambu') ? BAMBU_READCLASSES.out.rds : Channel.empty() // channel: [ val(meta), [ rcFile ] ]
     versions = ch_versions // channel: [ versions.yml ]
 }

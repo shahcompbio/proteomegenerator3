@@ -8,7 +8,9 @@ option_list <- list(
   make_option("--merge", type="logical", default=FALSE,
               help="if multisample merge was performed", metavar="logical"),
   make_option("--min_cts", type="double", default=1,
-              help="min full-length reads for detected transcript")
+              help="min full-length reads for detected transcript"),
+  make_option("--output", type="character", default="detected_transcripts.gtf",
+              help="output GTF filename", metavar="character")
 );
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
@@ -25,4 +27,4 @@ if (opt$merge) {
   se.detected <- se[assays(se)$fullLengthCounts >= min_cts,]
 }
 detectgtf <- rowRanges(se.detected)
-writeToGTF(detectgtf, "detected_transcripts.gtf")
+writeToGTF(detectgtf, opt$output)

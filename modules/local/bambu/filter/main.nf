@@ -10,7 +10,7 @@ process BAMBU_FILTER {
     tuple val(meta), path(se)
 
     output:
-    tuple val(meta), path("detected_transcripts.gtf"), emit: gtf
+    tuple val(meta), path("${prefix}.gtf"), emit: gtf
     path "versions.yml", emit: versions
 
     when:
@@ -18,10 +18,10 @@ process BAMBU_FILTER {
 
     script:
     def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
+    prefix = task.ext.prefix ?: "${meta.id}"
     def merge_args = meta.id == "merge" ? "--merge=TRUE" : ""
     """
-    bambu_filter.R --se=${se} ${args} ${merge_args}
+    bambu_filter.R --se=${se} --output=${prefix}.gtf ${args} ${merge_args}
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         r-base: \$(echo \$(R --version 2>&1) | sed 's/^.*R version //; s/ .*\$//')
@@ -30,8 +30,9 @@ process BAMBU_FILTER {
     """
 
     stub:
+    prefix = task.ext.prefix ?: "${meta.id}"
     """
-    touch detected_transcripts.gtf
+    touch ${prefix}.gtf
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

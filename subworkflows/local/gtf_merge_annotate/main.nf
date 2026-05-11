@@ -1,9 +1,8 @@
-// Merge per-tool assembler GTFs into a single consensus assembly,
+// Merge per-tool assembler GTFs into a single union assembly,
 // reannotate with reference IDs, track provenance, and classify isoforms.
 
 include { STRINGTIE_MERGE                     } from '../../../modules/nf-core/stringtie/merge/main'
-include { GFFCOMPARE                          } from '../../../modules/nf-core/gffcompare/main'
-include { GFFCOMPARE as GFFCOMPARE_PROVENANCE } from '../../../modules/nf-core/gffcompare/main'
+include { GFFCOMPARE ; GFFCOMPARE as GFFCOMPARE_PROVENANCE } from '../../../modules/nf-core/gffcompare/main'
 include { REANNOTATEGTF                       } from '../../../modules/local/reannotategtf/main'
 include { LRAA_SQANTI                         } from '../../../modules/local/lraa/sqanti/main'
 
@@ -23,7 +22,7 @@ workflow GTF_MERGE_ANNOTATE {
 
     // Annotate merged GTF against reference annotation
     GFFCOMPARE(
-        STRINGTIE_MERGE.out.gtf.map { gtf -> [[id: "merged"], gtf] },
+        STRINGTIE_MERGE.out.gtf.map { gtf -> [[id: "union"], gtf] },
         [[], [], []],
         [[id: "ref"], ref_gtf],
     )
@@ -41,12 +40,12 @@ workflow GTF_MERGE_ANNOTATE {
     )
     ch_versions = ch_versions.mix(GFFCOMPARE_PROVENANCE.out.versions)
 
-    // SQANTI classification of merged isoforms
+    // SQANTI classification of union isoforms
     LRAA_SQANTI(REANNOTATEGTF.out.gtf, ref_gtf)
     ch_versions = ch_versions.mix(LRAA_SQANTI.out.versions)
 
     emit:
-    gtf      = REANNOTATEGTF.out.gtf // channel: [ val(meta), path(gtf) ] — reannotated merged GTF
+    gtf      = REANNOTATEGTF.out.gtf // channel: [ val(meta), path(gtf) ] — reannotated union GTF
     mapping  = REANNOTATEGTF.out.mapping // channel: [ val(meta), path(tsv) ] — ID mapping table
     tracking = GFFCOMPARE_PROVENANCE.out.tracking // channel: [ val(meta), path(tracking) ] — provenance
     sqanti   = LRAA_SQANTI.out.tsv // channel: [ val(meta), path(tsv) ] — isoform classification
