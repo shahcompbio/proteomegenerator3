@@ -24,16 +24,17 @@ workflow BAM_ASSEMBLY_STRINGTIE {
     }
     else {
 
-        // STRINGTIE_STRINGTIE.out.transcript_gtf.view()
-        merge_ch = STRINGTIE_STRINGTIE.out.transcript_gtf.collect { _meta, gtf -> gtf }
+        merge_ch = STRINGTIE_STRINGTIE.out.transcript_gtf
+            .map { _meta, gtf -> gtf }
+            .collect()
+            .map { gtfs -> [[id: "cohort"], gtfs] }
         // merge assembled transcripts across samples
         STRINGTIE_MERGE(
             merge_ch,
-            [],
+            [[], []],
         )
-        ch_versions = ch_versions.mix(STRINGTIE_MERGE.out.versions)
         stringtie_out_ch = stringtie_out_ch.mix(
-            STRINGTIE_MERGE.out.gtf.map { gtf -> [[id: "merge"], gtf] }
+            STRINGTIE_MERGE.out.merged_gtf
         )
     }
     // run gffcompare to determine which transcripts are non-canonical

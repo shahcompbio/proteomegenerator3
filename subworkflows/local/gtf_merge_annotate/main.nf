@@ -14,15 +14,16 @@ workflow GTF_MERGE_ANNOTATE {
 
     main:
     ch_versions = Channel.empty()
-
     // Collect all per-tool GTFs and merge with STRINGTIE_MERGE (no ref annotation)
-    merge_gtfs = assembly_ch.map { _meta, gtf -> gtf }.collect()
-    STRINGTIE_MERGE(merge_gtfs, [])
-    ch_versions = ch_versions.mix(STRINGTIE_MERGE.out.versions)
+    merge_gtfs = assembly_ch
+        .map { meta, gtf -> tuple(meta.id, meta, gtf) }
+        .groupTuple(by: 0)
+    // group by meta.id (sample name)
+    STRINGTIE_MERGE(merge_gtfs, [[], []])
 
     // Annotate merged GTF against reference annotation
     GFFCOMPARE(
-        STRINGTIE_MERGE.out.gtf.map { gtf -> [[id: "union"], gtf] },
+        STRINGTIE_MERGE.out.merged_gtf,
         [[], [], []],
         [[id: "ref"], ref_gtf],
     )

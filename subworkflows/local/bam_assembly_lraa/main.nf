@@ -69,7 +69,7 @@ workflow BAM_ASSEMBLY_LRAA {
         merge_input = per_sample_gtfs
             .map { _meta, gtf -> gtf }
             .collect()
-            .map { gtfs -> [[id: "merge"], gtfs] }
+            .map { gtfs -> [[id: "cohort"], gtfs] }
 
         LRAA_MERGE(merge_input, ref_fasta)
         ch_versions = ch_versions.mix(LRAA_MERGE.out.versions)
@@ -103,7 +103,7 @@ workflow BAM_ASSEMBLY_LRAA {
         quant_files = LRAA_QUANT.out.quant
             .map { _meta, expr -> expr }
             .collect()
-            .map { exprs -> [[id: "merge"], exprs] }
+            .map { exprs -> [[id: "cohort"], exprs] }
         LRAA_QUANTMERGE(quant_files)
         ch_versions = ch_versions.mix(LRAA_QUANTMERGE.out.versions)
     }
