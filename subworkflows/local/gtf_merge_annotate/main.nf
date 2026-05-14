@@ -47,7 +47,7 @@ workflow GTF_MERGE_ANNOTATE {
     ch_versions = ch_versions.mix(LRAA_SQANTI.out.versions)
 
     emit:
-    gtf      = REANNOTATEGTF.out.gtf // channel: [ val(meta), path(gtf) ] — reannotated union GTF
+    gtf      = REANNOTATEGTF.out.gtf.map { meta, gtf -> [meta + [tool: 'union'], gtf] } // channel: [ val(meta), path(gtf) ] — reannotated union GTF
     mapping  = REANNOTATEGTF.out.mapping // channel: [ val(meta), path(tsv) ] — ID mapping table
     tracking = GFFCOMPARE_PROVENANCE.out.tracking // channel: [ val(meta), path(tracking) ] — provenance
     sqanti   = LRAA_SQANTI.out.tsv // channel: [ val(meta), path(tsv) ] — isoform classification

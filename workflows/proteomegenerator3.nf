@@ -153,7 +153,7 @@ workflow PROTEOMEGENERATOR3 {
             )
             ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_SR.out.versions)
             // combine LR and SR assemblies
-            stringtie_ch = BAM_ASSEMBLY_STRINGTIE_SR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie'], gtf] }
+            stringtie_ch = BAM_ASSEMBLY_STRINGTIE_SR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie_sr'], gtf] }
             assembly_ch = assembly_ch.mix(stringtie_ch)
         }
         //
