@@ -10,10 +10,12 @@
 ### 1. Dynamic `meta.id` in `subworkflows/local/gtf_merge_annotate/main.nf`
 
 Derive `meta.id` from the incoming `assembly_ch`:
+
 - If incoming `meta.id == "merge"` (multi-sample path) → use `"cohort"`
 - Otherwise keep the original `meta.id` (which is the `sample_id` in single-sample mode)
 
 Result:
+
 - Multi-sample: `cohort.union.reannotated.gtf`
 - Single-sample: `{sample_id}.union.reannotated.gtf`
 
