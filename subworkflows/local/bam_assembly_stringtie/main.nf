@@ -27,7 +27,7 @@ workflow BAM_ASSEMBLY_STRINGTIE {
         merge_ch = STRINGTIE_STRINGTIE.out.transcript_gtf
             .map { _meta, gtf -> gtf }
             .collect()
-            .map { gtfs -> [[id: "cohort"], gtfs] }
+            .map { gtfs -> [[id: "cohort", subject_id: "cohort"], gtfs] }
         // merge assembled transcripts across samples
         STRINGTIE_MERGE(
             merge_ch,

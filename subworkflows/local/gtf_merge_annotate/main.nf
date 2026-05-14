@@ -16,9 +16,10 @@ workflow GTF_MERGE_ANNOTATE {
     ch_versions = Channel.empty()
     // Collect all per-tool GTFs and merge with STRINGTIE_MERGE (no ref annotation)
     merge_gtfs = assembly_ch
-        .map { meta, gtf -> tuple(meta.id, meta, gtf) }
-        .groupTuple(by: 0)
-    // group by meta.id (sample name)
+        .map { meta, gtf ->
+            [[id: meta.subject_id], gtf]
+        }
+        .groupTuple()
     STRINGTIE_MERGE(merge_gtfs, [[], []])
 
     // Annotate merged GTF against reference annotation

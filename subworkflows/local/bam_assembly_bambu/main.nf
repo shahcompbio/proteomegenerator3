@@ -67,7 +67,7 @@ workflow BAM_ASSEMBLY_BAMBU {
         // use minimal meta with only id and NDR to ensure all samples are grouped together
         se_ch = BAMBU_MERGE_QUANT.out.se
             .map { meta, se ->
-                def fmeta = [id: "cohort", NDR: meta.NDR]
+                def fmeta = [id: "cohort", NDR: meta.NDR, subject_id: "cohort"]
                 return [fmeta, se]
             }
             .groupTuple(by: 0)
