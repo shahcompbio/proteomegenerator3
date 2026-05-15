@@ -21,7 +21,7 @@ process BAMBU_FILTER {
     prefix = task.ext.prefix ?: "${meta.id}"
     def merge_args = meta.id == "merge" ? "--merge=TRUE" : ""
     """
-    bambu_filter.R --se=${se} --output=${prefix}.gtf ${args} ${merge_args}
+    bambu_filter.R --se=${se} --out_gtf=${prefix}.gtf ${args} ${merge_args}
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         r-base: \$(echo \$(R --version 2>&1) | sed 's/^.*R version //; s/ .*\$//')
