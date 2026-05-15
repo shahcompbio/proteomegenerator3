@@ -54,6 +54,8 @@ The pipeline supports three long-read transcript assemblers, selected via the `-
 | `lraa`      | [LRAA](https://github.com/TrinityCTAT/LRAA) for long-read assembly and annotation.                                   |
 | `stringtie` | [StringTie](https://ccb.jhu.edu/software/stringtie/) long-read mode.                                                 |
 
+You can run multiple assemblers simultaneously by providing a comma-separated list (e.g. `bambu,lraa,stringtie`). When multiple assemblers are selected, assemblies are merged across assemblers into a unified transcriptome before ORF prediction.
+
 Example using LRAA:
 
 ```bash

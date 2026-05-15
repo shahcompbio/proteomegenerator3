@@ -5,14 +5,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-05-15
+
 ### Added
 
+- Multi-assembler support: `--long_read_assembler` now accepts comma-separated values (e.g. `bambu,lraa,stringtie`) to run multiple assemblers and merge results
+- GTF merge and annotate subworkflow (`GTF_MERGE_ANNOTATE`) for merging assemblies across multiple assemblers
 - BAM QC subworkflow (`BAM_QC`) with Samtools Stats, NanoPlot, RSeQC bamstat, and Picard CollectRnaSeqMetrics
 - CLI parameter `--qc_only` to run only read filtering and QC (skips assembly and ORF prediction)
 - CLI parameter `--skip_qc` to skip the QC subworkflow entirely
-- CRAM output for filtered reads to reduce storage footprint
+- CRAM input support: samplesheet now accepts `cram` filetype entries (automatically converted to BAM)
+- CRAM output for filtered reads to reduce storage footprint via samtools/convert
 - QC outputs integrated into MultiQC report
 - nf-test for QC-only workflow (`qc_only.nf.test`)
+
+### Changed
+
+- `--long_read_assembler` parameter changed from enum to pattern-validated string to support comma-separated multi-assembler selection
+- Merge step only runs when needed (skipped for single-assembler, single-sample runs)
+- Merge ID switched from sample-level to cohort-level for multi-assembler merging
+- Separate publishDir paths for short-read and long-read StringTie outputs
+- Simplified CI workflow configuration
+
+### Fixed
+
+- StringTie merge across multiple assemblers
+- Merging multiple assemblers in single-sample vs multi-sample mode
+- Unstranded transcripts now dropped during reannotation
+- Bambu bug fix when running alongside other assemblers
+- Misleading output file naming in multi-assembler mode
+- Reannotated GTF naming consistency
+- Schema validation to allow multiple long-read assemblers
+- Bambu filter now outputs a `detected` flag for downstream filtering
 
 ## [1.3.0] - 2026-05-05
 
