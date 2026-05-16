@@ -5,10 +5,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.3.1] - 2026-05-15
+## [1.3.1] - 2026-05-16
 
 ### Added
 
+- CLI parameter `--orfs_only` to skip assembly and use pre-computed GTFs from the samplesheet for ORF prediction only
+- Generic `gtf` filetype in samplesheet (replaces `lraa_gtf`)
+- nf-test for ORFs-only workflow (`orfs_only.nf.test`)
 - Multi-assembler support: `--long_read_assembler` now accepts comma-separated values (e.g. `bambu,lraa,stringtie`) to run multiple assemblers and merge results
 - GTF merge and annotate subworkflow (`GTF_MERGE_ANNOTATE`) for merging assemblies across multiple assemblers
 - BAM QC subworkflow (`BAM_QC`) with Samtools Stats, NanoPlot, RSeQC bamstat, and Picard CollectRnaSeqMetrics
@@ -18,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CRAM output for filtered reads to reduce storage footprint via samtools/convert
 - QC outputs integrated into MultiQC report
 - nf-test for QC-only workflow (`qc_only.nf.test`)
+
+### Removed
+
+- CLI parameter `--skip_lraa_discovery` (superseded by `--orfs_only`)
+- `lraa_gtf` filetype from samplesheet (replaced by `gtf`)
 
 ### Changed
 
