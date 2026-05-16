@@ -8,8 +8,15 @@
         "type": "object",
         "properties": {
             "subject_id": {
-                "type": "string",
-                "pattern": "^\\S+$",
+                "anyOf": [
+                    {
+                        "type": "string",
+                        "pattern": "^\\S+$"
+                    },
+                    {
+                        "type": "integer"
+                    }
+                ],
                 "errorMessage": "Subject ID must be provided and cannot contain spaces",
                 "meta": ["subject_id"]
             },
