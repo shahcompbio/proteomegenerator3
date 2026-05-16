@@ -21,18 +21,9 @@ input:
         Channel of per-sample aligned BAMs
         Structure: [ val(meta), path(bam) ]
       pattern: "*.bam"
-  - lraa_gtf_ch:
-      type: file
-      description: |
-        Channel of pre-computed per-sample LRAA GTFs (empty when skip_lraa_discovery=false)
-        Structure: [ val(meta), path(gtf) ]
-      pattern: "*.gtf"
   - skip_multisample:
       type: boolean
       description: Skip multi-sample merging
-  - skip_discovery:
-      type: boolean
-      description: Skip per-sample discovery (use pre-computed GTFs)
   - sample_count:
       type: integer
       description: Number of samples in the cohort

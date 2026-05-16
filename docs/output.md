@@ -44,7 +44,7 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 
 </details>
 
-[LRAA](https://github.com/TrinityCTAT/LRAA) (Long Read Assembly and Annotation) is an alternative long-read transcript assembler. Select with `--long_read_assembler lraa`. Use `--skip_lraa_discovery` to skip assembly and use pre-computed GTFs from the samplesheet.
+[LRAA](https://github.com/TrinityCTAT/LRAA) (Long Read Assembly and Annotation) is an alternative long-read transcript assembler. Select with `--long_read_assembler lraa`.
 
 ### StringTie
 

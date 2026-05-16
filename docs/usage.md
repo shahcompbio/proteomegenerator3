@@ -68,7 +68,9 @@ nextflow run kentsislab/proteomegenerator3 \
    --long_read_assembler lraa
 ```
 
-To skip LRAA assembly and use pre-computed GTFs (proceeds directly to merge, reannotate, and quantify):
+## ORFs-only mode
+
+To skip transcript assembly entirely and use pre-computed GTF files for ORF prediction:
 
 ```bash
 nextflow run kentsislab/proteomegenerator3 \
@@ -77,14 +79,15 @@ nextflow run kentsislab/proteomegenerator3 \
    --fasta <REF_GENOME> \
    --gtf <REF_GTF> \
    --outdir results \
-   --long_read_assembler lraa \
-   --skip_lraa_discovery
+   --orfs_only
 ```
 
-When using `--skip_lraa_discovery`, your samplesheet must include `lraa_gtf` entries with paths to pre-computed LRAA GTF files.
+When using `--orfs_only`, your samplesheet must include `gtf` entries with paths to pre-computed GTF files. BAM/CRAM entries are not required.
+
+By default, if multiple GTFs are provided, they are merged into a cohort-level transcriptome before ORF prediction. Use `--skip_multisample` to process each GTF independently.
 
 > [!NOTE]
-> Bambu-specific parameters (`--NDR`, `--recommended_NDR`, `--skip_multisample`, `--skip_preprocessing`) only apply when `--long_read_assembler bambu` is selected.
+> Bambu-specific parameters (`--NDR`, `--recommended_NDR`, `--skip_preprocessing`) only apply when `--long_read_assembler bambu` is selected.
 
 ## QC-only mode
 

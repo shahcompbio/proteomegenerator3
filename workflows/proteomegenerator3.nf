@@ -13,6 +13,7 @@ include { SAMTOOLS_CONVERT as CRAM_TO_BAM                     } from '../modules
 include { PREDICT_ORFS                                        } from '../subworkflows/local/predict_orfs/main'
 include { FASTA_MERGE_ANNOTATE                                } from '../subworkflows/local/fasta_merge_annotate/main'
 include { GTF_MERGE_ANNOTATE                                  } from '../subworkflows/local/gtf_merge_annotate/main'
+include { GTF_MERGE_ANNOTATE as GTF_MERGE_ORFS_ONLY           } from '../subworkflows/local/gtf_merge_annotate/main'
 include { BAM_ASSEMBLY_STRINGTIE as BAM_ASSEMBLY_STRINGTIE_LR } from '../subworkflows/local/bam_assembly_stringtie/main'
 include { BAM_ASSEMBLY_STRINGTIE as BAM_ASSEMBLY_STRINGTIE_SR } from '../subworkflows/local/bam_assembly_stringtie/main'
 include { MULTIQC                                             } from '../modules/nf-core/multiqc/main'
@@ -22,7 +23,7 @@ include { softwareVersionsToYAML                              } from '../subwork
 include { methodsDescriptionText                              } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
 include { getLongReadBams                                     } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
 include { getLongReadRcFiles                                  } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
-include { getLongReadLraaGtfs                                 } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
+include { getGtfs                                             } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
 include { getShortReadBams                                    } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
 include { getFusionTsvs                                       } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
 include { getLongReadCrams                                    } from '../subworkflows/local/utils_nfcore_proteomegenerator3_pipeline'
@@ -46,129 +47,159 @@ workflow PROTEOMEGENERATOR3 {
     ch_long_read_bams = getLongReadBams(ch_samplesheet)
     ch_long_read_crams = getLongReadCrams(ch_samplesheet)
     ch_long_read_rc = getLongReadRcFiles(ch_samplesheet)
-    ch_long_read_lraa_gtfs = getLongReadLraaGtfs(ch_samplesheet)
+    ch_gtfs = getGtfs(ch_samplesheet)
     ch_short_read_bams = getShortReadBams(ch_samplesheet)
     ch_fusion_tsvs = getFusionTsvs(ch_samplesheet)
 
     //
-    // Convert CRAM inputs to BAM (if any)
+    // Index reference genome (needed for reannotation and CRAM conversion)
     //
     SAMTOOLS_FAIDX([[id: 'ref'], params.fasta, []], false)
     ref_fai = SAMTOOLS_FAIDX.out.fai.map { _meta, fai -> fai }
     ref_fasta_fai = SAMTOOLS_FAIDX.out.fai.map { _meta, fai -> [[id: 'ref'], file(params.fasta), fai] }
 
-    CRAM_TO_BAM(
-        ch_long_read_crams.map { meta, cram -> [meta, cram, []] },
-        ref_fasta_fai,
-    )
-    ch_long_read_bams = ch_long_read_bams.mix(CRAM_TO_BAM.out.bam)
+    if (!params.orfs_only) {
+        //
+        // Convert CRAM inputs to BAM (if any)
+        //
+        CRAM_TO_BAM(
+            ch_long_read_crams.map { meta, cram -> [meta, cram, []] },
+            ref_fasta_fai,
+        )
+        ch_long_read_bams = ch_long_read_bams.mix(CRAM_TO_BAM.out.bam)
 
-    //
-    // process long-read rnaseq data
-    //
-    if (!params.skip_preprocessing) {
-        PREPROCESS_READS(ch_long_read_bams, params.filter_reads, params.filter_acc_reads, params.long_read_assembler)
-        rc_ch = PREPROCESS_READS.out.reads
-        bam_ch = PREPROCESS_READS.out.bam
-        ch_versions = ch_versions.mix(PREPROCESS_READS.out.versions)
+        //
+        // process long-read rnaseq data
+        //
+        if (!params.skip_preprocessing) {
+            PREPROCESS_READS(ch_long_read_bams, params.filter_reads, params.filter_acc_reads, params.long_read_assembler)
+            rc_ch = PREPROCESS_READS.out.reads
+            bam_ch = PREPROCESS_READS.out.bam
+            ch_versions = ch_versions.mix(PREPROCESS_READS.out.versions)
+        }
+        else {
+            // Use provided rc_files when skipping preprocessing
+            rc_ch = ch_long_read_rc
+            bam_ch = ch_long_read_bams
+        }
+        // perform qc on filtered bams
+        if (!params.skip_qc) {
+            BAM_QC(rc_ch, bam_ch)
+            ch_versions = ch_versions.mix(BAM_QC.out.versions)
+            ch_multiqc_files = ch_multiqc_files.mix(BAM_QC.out.multiqc)
+        }
     }
-    else {
-        // Use provided rc_files when skipping preprocessing
-        rc_ch = ch_long_read_rc
-        bam_ch = ch_long_read_bams
-    }
-    // perform qc on filtered bams
-    if (!params.skip_qc) {
-        BAM_QC(rc_ch, bam_ch)
-        ch_versions = ch_versions.mix(BAM_QC.out.versions)
-        ch_multiqc_files = ch_multiqc_files.mix(BAM_QC.out.multiqc)
-    }
+    // end if (!params.orfs_only)
+
     if (!params.qc_only) {
-        // perform assembly & quantification with bambu
-        // make an NDR channel (single value only)
-        if (params.recommended_NDR) {
-            ch_NDR = channel.of("DEFAULT")
+        if (params.orfs_only) {
+            //
+            // ORFs-only mode: skip assembly, use pre-computed GTFs
+            //
+            sample_count = countSamples(params.input)
+
+            if (!params.skip_multisample && sample_count > 1) {
+                // Merge all GTFs into a cohort-level GTF via GTF_MERGE_ANNOTATE
+                merge_input_ch = ch_gtfs.map { meta, gtf ->
+                    [meta + [tool: 'user_gtf'], gtf]
+                }
+                GTF_MERGE_ORFS_ONLY(merge_input_ch, params.gtf, ref_fai)
+                ch_versions = ch_versions.mix(GTF_MERGE_ORFS_ONLY.out.versions)
+                downstream_gtf_ch = GTF_MERGE_ORFS_ONLY.out.gtf
+            }
+            else {
+                // Single GTF or skip_multisample: pass GTFs directly (no reannotation)
+                downstream_gtf_ch = ch_gtfs
+            }
         }
         else {
-            ch_NDR = channel.of(params.NDR)
-        }
-        ref_gtf_ch = channel.of(params.gtf)
-        // run sample assembly & quant with read classes
-        // count samples to make sure multisample isn't run on single samples
-        sample_count = countSamples(params.input)
+            //
+            // Standard assembly mode
+            //
+            // make an NDR channel (single value only)
+            if (params.recommended_NDR) {
+                ch_NDR = channel.of("DEFAULT")
+            }
+            else {
+                ch_NDR = channel.of(params.NDR)
+            }
+            ref_gtf_ch = channel.of(params.gtf)
+            // run sample assembly & quant with read classes
+            // count samples to make sure multisample isn't run on single samples
+            sample_count = countSamples(params.input)
 
-        //
-        // Long-read assembly: select assembler
-        //
-        assembly_ch = Channel.empty()
+            //
+            // Long-read assembly: select assembler
+            //
+            assembly_ch = Channel.empty()
 
-        if (params.long_read_assembler.split(',').contains('bambu')) {
-            BAM_ASSEMBLY_BAMBU(
-                rc_ch,
-                params.skip_multisample,
-                sample_count,
-                ch_NDR,
-                ref_gtf_ch,
-                bam_ch,
-            )
-            ch_versions = ch_versions.mix(BAM_ASSEMBLY_BAMBU.out.versions)
-            assembly_ch = assembly_ch.mix(BAM_ASSEMBLY_BAMBU.out.gtf.map { meta, gtf -> [meta + [tool: 'bambu'], gtf] })
-        }
-        if (params.long_read_assembler.split(',').contains('lraa')) {
-            BAM_ASSEMBLY_LRAA(
-                bam_ch,
-                ch_long_read_lraa_gtfs,
-                params.skip_multisample,
-                params.skip_lraa_discovery,
-                sample_count,
-                params.gtf,
-                params.fasta,
-                ref_fai,
-            )
-            ch_versions = ch_versions.mix(BAM_ASSEMBLY_LRAA.out.versions)
-            assembly_ch = assembly_ch.mix(BAM_ASSEMBLY_LRAA.out.gtf.map { meta, gtf -> [meta + [tool: 'lraa'], gtf] })
-        }
-        if (params.long_read_assembler.split(',').contains('stringtie')) {
-            BAM_ASSEMBLY_STRINGTIE_LR(
-                bam_ch,
-                params.gtf,
-                params.skip_multisample,
-                sample_count,
-                ref_fai,
-            )
-            ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_LR.out.versions)
-            assembly_ch = assembly_ch.mix(BAM_ASSEMBLY_STRINGTIE_LR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie_lr'], gtf] })
-        }
+            if (params.long_read_assembler.split(',').contains('bambu')) {
+                BAM_ASSEMBLY_BAMBU(
+                    rc_ch,
+                    params.skip_multisample,
+                    sample_count,
+                    ch_NDR,
+                    ref_gtf_ch,
+                    bam_ch,
+                )
+                ch_versions = ch_versions.mix(BAM_ASSEMBLY_BAMBU.out.versions)
+                assembly_ch = assembly_ch.mix(BAM_ASSEMBLY_BAMBU.out.gtf.map { meta, gtf -> [meta + [tool: 'bambu'], gtf] })
+            }
+            if (params.long_read_assembler.split(',').contains('lraa')) {
+                BAM_ASSEMBLY_LRAA(
+                    bam_ch,
+                    params.skip_multisample,
+                    sample_count,
+                    params.gtf,
+                    params.fasta,
+                    ref_fai,
+                )
+                ch_versions = ch_versions.mix(BAM_ASSEMBLY_LRAA.out.versions)
+                assembly_ch = assembly_ch.mix(BAM_ASSEMBLY_LRAA.out.gtf.map { meta, gtf -> [meta + [tool: 'lraa'], gtf] })
+            }
+            if (params.long_read_assembler.split(',').contains('stringtie')) {
+                BAM_ASSEMBLY_STRINGTIE_LR(
+                    bam_ch,
+                    params.gtf,
+                    params.skip_multisample,
+                    sample_count,
+                    ref_fai,
+                )
+                ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_LR.out.versions)
+                assembly_ch = assembly_ch.mix(BAM_ASSEMBLY_STRINGTIE_LR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie_lr'], gtf] })
+            }
 
-        //
-        // process short-read rnaseq data (if provided)
-        //
-        if (params.short_reads) {
-            BAM_ASSEMBLY_STRINGTIE_SR(
-                ch_short_read_bams,
-                params.gtf,
-                params.skip_multisample,
-                sample_count,
-                ref_fai,
-            )
-            ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_SR.out.versions)
-            // combine LR and SR assemblies
-            stringtie_ch = BAM_ASSEMBLY_STRINGTIE_SR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie_sr'], gtf] }
-            assembly_ch = assembly_ch.mix(stringtie_ch)
+            //
+            // process short-read rnaseq data (if provided)
+            //
+            if (params.short_reads) {
+                BAM_ASSEMBLY_STRINGTIE_SR(
+                    ch_short_read_bams,
+                    params.gtf,
+                    params.skip_multisample,
+                    sample_count,
+                    ref_fai,
+                )
+                ch_versions = ch_versions.mix(BAM_ASSEMBLY_STRINGTIE_SR.out.versions)
+                // combine LR and SR assemblies
+                stringtie_ch = BAM_ASSEMBLY_STRINGTIE_SR.out.gtf.map { meta, gtf -> [meta + [tool: 'stringtie_sr'], gtf] }
+                assembly_ch = assembly_ch.mix(stringtie_ch)
+            }
+            //
+            // Merge assembler GTFs into consensus assembly (only when multiple assemblers)
+            //
+            def assembler_count = params.long_read_assembler.split(',').size() + (params.short_reads ? 1 : 0)
+            if (assembler_count > 1) {
+                GTF_MERGE_ANNOTATE(assembly_ch, params.gtf, ref_fai)
+                ch_versions = ch_versions.mix(GTF_MERGE_ANNOTATE.out.versions)
+                downstream_gtf_ch = GTF_MERGE_ANNOTATE.out.gtf
+            }
+            else {
+                // Single assembler: use its GTF directly (already annotated)
+                downstream_gtf_ch = assembly_ch
+            }
         }
-        //
-        // Merge assembler GTFs into consensus assembly (only when multiple assemblers)
-        //
-        def assembler_count = params.long_read_assembler.split(',').size() + (params.short_reads ? 1 : 0)
-        if (assembler_count > 1) {
-            GTF_MERGE_ANNOTATE(assembly_ch, params.gtf, ref_fai)
-            ch_versions = ch_versions.mix(GTF_MERGE_ANNOTATE.out.versions)
-            downstream_gtf_ch = GTF_MERGE_ANNOTATE.out.gtf
-        }
-        else {
-            // Single assembler: use its GTF directly (already annotated)
-            downstream_gtf_ch = assembly_ch
-        }
+        // end assembly mode selection
 
         //
         // Downstream: single path

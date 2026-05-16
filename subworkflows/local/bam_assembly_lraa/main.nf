@@ -13,9 +13,7 @@ include { REANNOTATEGTF   } from '../../../modules/local/reannotategtf/main'
 workflow BAM_ASSEMBLY_LRAA {
     take:
     bam_ch // channel: [ val(meta), path(bam) ]    — post-PREPROCESS_READS
-    lraa_gtf_ch // channel: [ val(meta), path(gtf) ]    — pre-computed, empty when skip_lraa_discovery=false
     skip_multisample // val
-    skip_discovery // val (params.skip_lraa_discovery)
     sample_count // val
     ref_gtf // val: path(ref_gtf)
     ref_fasta // val: path(genome fasta)
@@ -27,19 +25,12 @@ workflow BAM_ASSEMBLY_LRAA {
     quant_input = channel.empty()
 
     //
-    // Step 1: Per-sample GTF source
+    // Step 1: Run guided assembly per sample
     //
-    if (skip_discovery) {
-        // Use pre-computed GTFs from the samplesheet
-        per_sample_gtfs = lraa_gtf_ch
-    }
-    else {
-        // Run guided assembly per sample
-        assembly_input = bam_ch.combine(Channel.of(file(ref_gtf)))
-        LRAA_ASSEMBLY(assembly_input, ref_fasta)
-        ch_versions = ch_versions.mix(LRAA_ASSEMBLY.out.versions.first())
-        per_sample_gtfs = LRAA_ASSEMBLY.out.gtf
-    }
+    assembly_input = bam_ch.combine(Channel.of(file(ref_gtf)))
+    LRAA_ASSEMBLY(assembly_input, ref_fasta)
+    ch_versions = ch_versions.mix(LRAA_ASSEMBLY.out.versions.first())
+    per_sample_gtfs = LRAA_ASSEMBLY.out.gtf
 
     //
     // Step 2: Single-sample or multi-sample path

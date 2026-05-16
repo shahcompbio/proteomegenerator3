@@ -277,10 +277,6 @@
                     "pattern": "^(bambu|lraa|stringtie)(,(bambu|lraa|stringtie))*$",
                     "description": "Long-read transcript assembler(s) to use. Comma-separated for multiple (e.g. 'bambu,lraa,stringtie')."
                 },
-                "skip_lraa_discovery": {
-                    "type": "boolean",
-                    "description": "Skip LRAA per-sample discovery and use pre-computed GTFs from the samplesheet (lraa_gtf filetype). Only used when long_read_assembler = lraa."
-                },
                 "skip_multisample": {
                     "type": "boolean",
                     "description": "skip multisample transcript assembly and proteome"
@@ -304,7 +300,7 @@
                 },
                 "yieldsize": {
                     "type": "number",
-                    "default": 100000.0,
+                    "default": 100000,
                     "description": "Number of reads to process; lower helps with memory"
                 },
                 "recommended_NDR": {
@@ -313,7 +309,7 @@
                 },
                 "min_lr_cts": {
                     "type": "number",
-                    "default": 1.0,
+                    "default": 1,
                     "description": "min full-length read count for detected transcripts"
                 }
             }
@@ -375,7 +371,7 @@
                 },
                 "min_stringtie_tpm": {
                     "type": "number",
-                    "default": 1.0,
+                    "default": 1,
                     "description": "if merging across samples, min TPM for detected transcript"
                 }
             }
@@ -411,6 +407,10 @@
         }
     ],
     "properties": {
+        "orfs_only": {
+            "type": "boolean",
+            "description": "Skip assembly and use pre-computed GTFs from the samplesheet (filetype: gtf) for ORF prediction only"
+        },
         "fusions": {
             "type": "boolean",
             "description": "enable if you have included fusion predictions from CTAT-lr-fusion in the samplesheet"

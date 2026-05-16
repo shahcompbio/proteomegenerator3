@@ -174,7 +174,7 @@ nextflow run kentsislab/proteomegenerator3 -r 1.3.1 \
 Available options:
 
 - `bambu` (default): Guided and de novo transcript assembly with Bambu. Supports multi-sample merging and novel discovery rate (NDR) tuning.
-- `lraa`: [LRAA](https://github.com/TrinityCTAT/LRAA) (Long Read Assembly and Annotation) for transcript assembly. Use `--skip_lraa_discovery` to skip assembly, use pre-computed GTFs from the samplesheet, and just merge and quantify gtfs.
+- `lraa`: [LRAA](https://github.com/TrinityCTAT/LRAA) (Long Read Assembly and Annotation) for transcript assembly.
 - `stringtie`: [StringTie](https://ccb.jhu.edu/software/stringtie/) for long-read transcript assembly.
 
 You can also run multiple assemblers simultaneously by providing a comma-separated list:
@@ -216,7 +216,7 @@ I have highlighted the following options here:
 15. `min_lr_cts`: minimum full-length read counts for Bambu transcript filtering [default: 1.0]
 16. `min_stringtie_tpm`: minimum TPM for StringTie transcript merging [default: 1.0]
 17. `long_read_assembler`: select the long-read transcript assembler [default: bambu]. Options: `bambu`, `lraa`, `stringtie`.
-18. `skip_lraa_discovery`: skip LRAA assembly and use pre-computed GTFs from the samplesheet (proceeds directly to merge, reannotate, and quantify) [default: false]
+18. `orfs_only`: skip assembly and use pre-computed GTFs from the samplesheet (filetype: `gtf`) for ORF prediction only [default: false]
 19. `qc_only`: run only read filtering and QC, skipping assembly and ORF prediction [default: false]
 20. `skip_qc`: skip the QC subworkflow (Samtools Stats, NanoPlot, RSeQC, Picard) entirely [default: false]
 
