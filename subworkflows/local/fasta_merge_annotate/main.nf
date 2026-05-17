@@ -44,7 +44,7 @@ workflow FASTA_MERGE_ANNOTATE {
         // TRANSDECODER2FASTA.out.fasta.view()
         cat_ch = fasta_ch
             .map { meta, fasta ->
-                [[id: meta.id], meta, fasta]
+                [[id: meta.subject_id ?: meta.id], meta, fasta]
             }
             .combine(
                 FUSIONFASTA.out.fasta.map { meta, fasta -> [[id: meta.subject_id ?: meta.id], fasta] },
