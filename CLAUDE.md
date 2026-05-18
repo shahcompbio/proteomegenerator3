@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Nextflow DSL2** (version ≥24.04.2)
 - **nf-schema plugin** (v2.2.0) for parameter validation
 - **nf-test** for testing
-- Primary tools: Bambu (transcript assembly), Transdecoder (ORF prediction), GFFREAD (cDNA extraction)
+- Primary tools: Bambu, LRAA, StringTie (transcript assembly), Transdecoder (ORF prediction), GFFREAD (cDNA extraction)
 
 ## Essential Commands
 
@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Basic execution:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.3.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.3.1 \
   -profile <docker/singularity/.../institute> \
   --input samplesheet.csv \
   --fasta <REF_GENOME> \
@@ -80,8 +80,12 @@ nextflow run . -profile docker -resume
 
 2. **workflows/proteomegenerator3.nf**: Main workflow logic
 
-   - **PREPROCESS_READS**: Filters BAM files by MAPQ/read length, removes accessory chromosome reads
+   - **PREPROCESS_READS**: Filters BAM files by MAPQ/read length, removes accessory chromosome reads; outputs CRAM for filtered reads
+   - **BAM_QC**: Quality control with Samtools Stats, NanoPlot, RSeQC, and Picard (optional, skip with `--skip_qc`)
    - **BAM_ASSEMBLY_BAMBU**: Runs Bambu for transcript assembly and quantification
+   - **BAM_ASSEMBLY_LRAA**: Runs LRAA for transcript assembly (alternative assembler)
+   - **BAM_ASSEMBLY_STRINGTIE**: Runs StringTie for transcript assembly (alternative assembler)
+   - **GTF_MERGE_ANNOTATE**: Merges assemblies across multiple assemblers (when multiple assemblers selected)
    - **GFFREAD**: Extracts cDNA sequences from assembled transcripts
    - **CAT_CAT**: Concatenates transcript and fusion FASTA files (when fusions enabled)
    - **PREDICT_ORFS**: Predicts ORFs using Transdecoder
@@ -89,8 +93,12 @@ nextflow run . -profile docker -resume
 
 3. **Subworkflows** (in `subworkflows/local/`):
 
-   - `preprocess_reads/`: Read filtering and quality control
+   - `preprocess_reads/`: Read filtering, CRAM conversion, and quality control
+   - `bam_qc/`: BAM quality control (Samtools Stats, NanoPlot, RSeQC, Picard)
    - `bam_assembly_bambu/`: Transcript assembly with Bambu
+   - `bam_assembly_lraa/`: Transcript assembly with LRAA
+   - `bam_assembly_stringtie/`: Transcript assembly with StringTie
+   - `gtf_merge_annotate/`: Merge and reannotate GTFs across assemblers
    - `predict_orfs/`: ORF prediction with Transdecoder and FASTA formatting
 
 4. **Python Scripts** (in `bin/`):
@@ -141,12 +149,18 @@ When `--fusions` is enabled, the workflow:
 
 ### Important Parameters
 
-**Read Filtering**:
+**Read Filtering and QC**:
 
 - `--filter_reads`: Enable pre-filtering (default: false)
 - `--mapq`: Minimum MAPQ score (default: 20)
 - `--read_len`: Minimum read length (default: 500)
 - `--filter_acc_reads`: Filter accessory chromosomes (default: false)
+- `--skip_qc`: Skip the QC subworkflow (default: false)
+- `--qc_only`: Run only read filtering and QC, skip assembly and ORF prediction (default: false)
+
+**Assembly**:
+
+- `--long_read_assembler`: Assembler(s) to use, comma-separated (default: `bambu`; options: `bambu`, `lraa`, `stringtie`)
 
 **Bambu Assembly**:
 
@@ -170,7 +184,7 @@ Samplesheet CSV with long-format (one row per file):
 | `subject_id`    | Yes      | String (no spaces)                  | Subject/patient identifier |
 | `sample_id`     | Yes      | String (no spaces)                  | Sample identifier          |
 | `sequence_type` | Yes      | `long_read`, `short_read`, `fusion` | Data modality              |
-| `filetype`      | Yes      | `bam`, `rc_file`, `tsv`             | File format                |
+| `filetype`      | Yes      | `bam`, `cram`, `rc_file`, `tsv`     | File format                |
 | `filepath`      | Yes      | File path                           | Path to the file           |
 
 **Example:**
@@ -180,12 +194,13 @@ subject_id,sample_id,sequence_type,filetype,filepath
 PATIENT1,SAMPLE1,long_read,bam,/path/to/sample1.bam
 PATIENT1,SAMPLE1,long_read,rc_file,/path/to/sample1.rds
 PATIENT1,SAMPLE1,fusion,tsv,/path/to/sample1_fusions.tsv
-PATIENT1,SAMPLE2,long_read,bam,/path/to/sample2.bam
+PATIENT1,SAMPLE2,long_read,cram,/path/to/sample2.cram
 ```
 
 **Validation Rules:**
 
-- Every sample MUST have at least one `long_read` + `bam` entry
+- Every sample MUST have at least one `long_read` + `bam` or `long_read` + `cram` entry
+- `cram` entries are automatically converted to BAM; requires `--fasta`
 - `rc_file` filetype only valid with `sequence_type: long_read`
 - `fusion` entries only processed when `--fusions` flag is enabled
 - `short_read` entries only processed when `--short_reads` flag is enabled

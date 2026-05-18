@@ -33,8 +33,8 @@
             },
             "filetype": {
                 "type": "string",
-                "enum": ["bam", "rc_file", "tsv", "lraa_gtf"],
-                "errorMessage": "filetype must be one of: bam, rc_file, tsv, lraa_gtf"
+                "enum": ["bam", "cram", "rc_file", "tsv", "gtf"],
+                "errorMessage": "filetype must be one of: bam, cram, rc_file, tsv, gtf"
             },
             "filepath": {
                 "type": "string",

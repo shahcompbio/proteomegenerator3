@@ -85,10 +85,6 @@ jobs:
         if: failure()
         run: |
           find .nf-test/tests -name "nextflow.log" -exec cat {} +
-          echo "===== Process .command.err files ====="
-          find .nf-test -name ".command.err" -exec sh -c 'echo "--- {} ---"; cat {}' \;
-          echo "===== Process .command.log files ====="
-          find .nf-test -name ".command.log" -exec sh -c 'echo "--- {} ---"; cat {}' \;
 
   confirm-pass:
     runs-on: ubuntu-latest
