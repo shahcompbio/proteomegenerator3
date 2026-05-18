@@ -9,6 +9,9 @@ This document describes the output produced by the pipeline. All paths are relat
 The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
 
 - [Bambu](#bambu) - Read class generation, transcript assembly, and quantification
+- [LRAA](#lraa) - Long-read assembly and annotation (alternative assembler)
+- [StringTie](#stringtie) - Long-read transcript assembly (alternative assembler)
+- [QC](#qc) - BAM quality control (Samtools Stats, NanoPlot, RSeQC, Picard)
 - [Transdecoder](#transdecoder) - ORF prediction
 - [Proteome](#proteome) - Final proteome FASTA database with deduplication and statistics
 - [MultiQC](#multiqc) - Aggregate report describing results and QC from the whole pipeline
@@ -29,6 +32,54 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 </details>
 
 [Bambu](https://github.com/GoekeLab/bambu) performs transcript discovery and quantification from long-read RNA-seq data. Read classes are generated from aligned BAM files, then used for guided transcript assembly at the specified Novel Discovery Rate (NDR). When multiple samples are provided (and `--skip_multisample` is not set), transcripts are merged across samples into a unified transcriptome before quantification.
+
+### LRAA
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `lraa/<sample_id>/`
+  - `*.gtf`: LRAA transcript assembly GTF
+  - `*_quant.txt`: Transcript quantification
+
+</details>
+
+[LRAA](https://github.com/TrinityCTAT/LRAA) (Long Read Assembly and Annotation) is an alternative long-read transcript assembler. Select with `--long_read_assembler lraa`.
+
+### StringTie
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `stringtie/<sample_id>/`
+  - `*.gtf`: StringTie transcript assembly GTF
+  - `*_quant.txt`: Transcript quantification
+
+</details>
+
+[StringTie](https://ccb.jhu.edu/software/stringtie/) long-read mode is an alternative long-read transcript assembler. Select with `--long_read_assembler stringtie`. Short-read and long-read StringTie outputs are published to separate directories.
+
+> [!NOTE]
+> When multiple assemblers are selected (e.g. `--long_read_assembler bambu,lraa`), assemblies are merged across assemblers via the GTF merge and annotate subworkflow before ORF prediction.
+
+### QC
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `qc/samtools/`
+  - `*.stats`: Samtools stats output with alignment metrics (mapped reads, error rates, insert sizes, etc.)
+- `qc/nanoplot/`
+  - `*.NanoPlot-report.html`: Interactive HTML report with read length distributions, quality scores, and throughput plots
+  - `*.NanoStats.txt`: Summary statistics in text format (used by MultiQC)
+- `qc/rseqc/`
+  - `*.bam_stat.txt`: RSeQC BAM statistics including total reads, mapped reads, and mapping quality distribution
+- `qc/picard/`
+  - `*.rna_metrics`: Picard CollectRnaSeqMetrics output with coverage across gene bodies, percentage of bases in coding/UTR/intronic/intergenic regions
+
+</details>
+
+The BAM QC subworkflow runs on filtered (or unfiltered) BAMs to assess data quality. It sorts and indexes BAMs, then runs four QC tools in parallel. All outputs are collected into the [MultiQC](#multiqc) report. Use `--skip_qc` to skip QC entirely, or `--qc_only` to run only read filtering and QC without proceeding to assembly and ORF prediction.
 
 ### Transdecoder
 

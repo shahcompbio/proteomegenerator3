@@ -24,12 +24,13 @@
 
 1. Pre-processing of aligned reads to create transcript read classes with [bambu](https://github.com/GoekeLab/bambu) which can be re-used in future analyses. Optional filtering:
    1. Filtering on MAPQ and read length with [samtools](https://www.htslib.org/)
-2. Transcript assembly, quantification, and filtering with [bambu](https://github.com/GoekeLab/bambu). Option to merge multiple samples into a unified transcriptome.
-3. ORF prediction with [Transdecoder](https://github.com/TransDecoder/TransDecoder).
-4. Formatting of ORFs into a UniProt-style fasta file which can be used for computational proteomics searchs with [Fragpipe](https://fragpipe.nesvilab.org/), [DIA-NN](https://github.com/vdemichev/DiaNN), [Spectronaut](https://biognosys.com/software/spectronaut/).
-5. Concatenation of sample-specific proteome fasta produced in #4 with a UniProt proteome of the user's choice to allow for spectra to compete between non-canonical and canonical proteoforms.
-6. Deduplication of sequences and basic statistics with [seqkit](https://bioinf.shenwei.me/seqkit/usage/#quick-guide)
-7. MultiQC to collate package versions used ([`MultiQC`](http://multiqc.info/))
+2. BAM quality control with [Samtools Stats](https://www.htslib.org/), [NanoPlot](https://github.com/wdecoster/NanoPlot), [RSeQC](https://rseqc.sourceforge.net/), and [Picard CollectRnaSeqMetrics](https://broadinstitute.github.io/picard/). Can be run standalone with `--qc_only` or skipped with `--skip_qc`.
+3. Transcript assembly, quantification, and filtering with [bambu](https://github.com/GoekeLab/bambu). Option to merge multiple samples into a unified transcriptome.
+4. ORF prediction with [Transdecoder](https://github.com/TransDecoder/TransDecoder).
+5. Formatting of ORFs into a UniProt-style fasta file which can be used for computational proteomics searchs with [Fragpipe](https://fragpipe.nesvilab.org/), [DIA-NN](https://github.com/vdemichev/DiaNN), [Spectronaut](https://biognosys.com/software/spectronaut/).
+6. Concatenation of sample-specific proteome fasta produced in #5 with a UniProt proteome of the user's choice to allow for spectra to compete between non-canonical and canonical proteoforms.
+7. Deduplication of sequences and basic statistics with [seqkit](https://bioinf.shenwei.me/seqkit/usage/#quick-guide)
+8. MultiQC to collate QC metrics and package versions ([`MultiQC`](http://multiqc.info/))
 
 ## Usage
 
@@ -55,12 +56,13 @@ Each row represents a single file associated with a sample. The columns are as f
 | `subject_id`    | Yes      | String (no spaces)                  | Subject/patient identifier |
 | `sample_id`     | Yes      | String (no spaces)                  | Sample identifier          |
 | `sequence_type` | Yes      | `long_read`, `short_read`, `fusion` | Data modality              |
-| `filetype`      | Yes      | `bam`, `rc_file`, `tsv`             | File format                |
+| `filetype`      | Yes      | `bam`, `cram`, `rc_file`, `tsv`     | File format                |
 | `filepath`      | Yes      | File path                           | Path to the file           |
 
 **Requirements:**
 
-- Every sample MUST have at least one `long_read` + `bam` entry
+- Every sample MUST have at least one `long_read` + `bam` or `long_read` + `cram` entry
+- `cram` entries are automatically converted to BAM before processing; requires `--fasta` to be set
 - `rc_file` entries are optional; use with `--skip_preprocessing` flag to speed up runtime by reusing Bambu read classes from previous runs
 - `fusion` entries require the `--fusions` flag to be processed
 - `short_read` entries require the `--short_reads` flag to be processed
@@ -72,7 +74,7 @@ Now, you can run the pipeline using:
 <!-- TODO nf-core: update the following command to include all required parameters for a minimal example -->
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.3.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.3.1 \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --fasta <REF_GENOME> \
@@ -90,13 +92,13 @@ Where `REF_GENOME` and `REF_GTF` are the reference genome and transcriptome resp
 To see all optional parameters that could be used with the pipeline and their explanations, use the help menu:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.3.0 --help
+nextflow run kentsislab/proteomegenerator3 -r 1.3.1 --help
 ```
 
 This options can be run using flags. For example:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.3.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.3.1 \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --fasta <REF_GENOME> \
@@ -110,7 +112,7 @@ Will pre-filter the bam file before transcript assembly is performed on mapq and
 As another example, you can skip multi-sample transcript merging and process each sample independently:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.3.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.3.1 \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --fasta <REF_GENOME> \
@@ -122,7 +124,7 @@ nextflow run kentsislab/proteomegenerator3 -r 1.3.0 \
 To include fusion predictions from ctat-lr-fusion in your proteome database, use the `--fusions` flag:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.3.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.3.1 \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --fasta <REF_GENOME> \
@@ -136,7 +138,7 @@ Note that when using `--fusions`, your samplesheet must include `fusion` + `tsv`
 To include short-read RNA-seq data for complementary transcript assembly, use the `--short_reads` flag:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.3.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.3.1 \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --fasta <REF_GENOME> \
@@ -160,7 +162,7 @@ Short-read transcripts are assembled using StringTie and the resulting ORF predi
 By default, the pipeline uses [Bambu](https://github.com/GoekeLab/bambu) for long-read transcript assembly. You can select an alternative assembler using the `--long_read_assembler` parameter:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.3.0 \
+nextflow run kentsislab/proteomegenerator3 -r 1.3.1 \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --fasta <REF_GENOME> \
@@ -172,8 +174,22 @@ nextflow run kentsislab/proteomegenerator3 -r 1.3.0 \
 Available options:
 
 - `bambu` (default): Guided and de novo transcript assembly with Bambu. Supports multi-sample merging and novel discovery rate (NDR) tuning.
-- `lraa`: [LRAA](https://github.com/TrinityCTAT/LRAA) (Long Read Assembly and Annotation) for transcript assembly. Use `--skip_lraa_discovery` to skip assembly, use pre-computed GTFs from the samplesheet, and just merge and quantify gtfs.
+- `lraa`: [LRAA](https://github.com/TrinityCTAT/LRAA) (Long Read Assembly and Annotation) for transcript assembly.
 - `stringtie`: [StringTie](https://ccb.jhu.edu/software/stringtie/) for long-read transcript assembly.
+
+You can also run multiple assemblers simultaneously by providing a comma-separated list:
+
+```bash
+nextflow run kentsislab/proteomegenerator3 -r 1.3.1 \
+   -profile <docker/singularity/.../institute> \
+   --input samplesheet.csv \
+   --fasta <REF_GENOME> \
+   --gtf <REF_GTF> \
+   --outdir <OUTDIR> \
+   --long_read_assembler bambu,lraa,stringtie
+```
+
+When multiple assemblers are selected, assemblies are merged across assemblers into a unified transcriptome before ORF prediction.
 
 To run with the latest version, which may not be stable you can use the `-r dev -latest` flags:
 
@@ -200,7 +216,9 @@ I have highlighted the following options here:
 15. `min_lr_cts`: minimum full-length read counts for Bambu transcript filtering [default: 1.0]
 16. `min_stringtie_tpm`: minimum TPM for StringTie transcript merging [default: 1.0]
 17. `long_read_assembler`: select the long-read transcript assembler [default: bambu]. Options: `bambu`, `lraa`, `stringtie`.
-18. `skip_lraa_discovery`: skip LRAA assembly and use pre-computed GTFs from the samplesheet (proceeds directly to merge, reannotate, and quantify) [default: false]
+18. `orfs_only`: skip assembly and use pre-computed GTFs from the samplesheet (filetype: `gtf`) for ORF prediction only [default: false]
+19. `qc_only`: run only read filtering and QC, skipping assembly and ORF prediction [default: false]
+20. `skip_qc`: skip the QC subworkflow (Samtools Stats, NanoPlot, RSeQC, Picard) entirely [default: false]
 
 ## Credits
 

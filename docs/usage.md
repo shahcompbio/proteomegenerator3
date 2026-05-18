@@ -23,7 +23,7 @@ subject_id,sample_id,sequence_type,filetype,filepath
 PATIENT1,SAMPLE1,long_read,bam,/path/to/sample1.bam
 PATIENT1,SAMPLE1,long_read,rc_file,/path/to/sample1.rds
 PATIENT1,SAMPLE1,fusion,tsv,/path/to/sample1_fusions.tsv
-PATIENT1,SAMPLE2,long_read,bam,/path/to/sample2.bam
+PATIENT1,SAMPLE2,long_read,cram,/path/to/sample2.cram
 ```
 
 | Column          | Required | Values                              | Description                |
@@ -31,12 +31,13 @@ PATIENT1,SAMPLE2,long_read,bam,/path/to/sample2.bam
 | `subject_id`    | Yes      | String (no spaces)                  | Subject/patient identifier |
 | `sample_id`     | Yes      | String (no spaces)                  | Sample identifier          |
 | `sequence_type` | Yes      | `long_read`, `short_read`, `fusion` | Data modality              |
-| `filetype`      | Yes      | `bam`, `rc_file`, `tsv`             | File format                |
+| `filetype`      | Yes      | `bam`, `cram`, `rc_file`, `tsv`     | File format                |
 | `filepath`      | Yes      | File path                           | Path to the file           |
 
 **Requirements:**
 
-- Every sample MUST have at least one `long_read` + `bam` entry
+- Every sample MUST have at least one `long_read` + `bam` or `long_read` + `cram` entry
+- `cram` entries are automatically converted to BAM before processing; requires `--fasta` to be set
 - `rc_file` entries are optional; use with `--skip_preprocessing` flag to speed up runtime by reusing Bambu read classes from previous runs
 - `fusion` entries require the `--fusions` flag to be processed
 - `short_read` entries require the `--short_reads` flag to be processed
@@ -53,6 +54,8 @@ The pipeline supports three long-read transcript assemblers, selected via the `-
 | `lraa`      | [LRAA](https://github.com/TrinityCTAT/LRAA) for long-read assembly and annotation.                                   |
 | `stringtie` | [StringTie](https://ccb.jhu.edu/software/stringtie/) long-read mode.                                                 |
 
+You can run multiple assemblers simultaneously by providing a comma-separated list (e.g. `bambu,lraa,stringtie`). When multiple assemblers are selected, assemblies are merged across assemblers into a unified transcriptome before ORF prediction.
+
 Example using LRAA:
 
 ```bash
@@ -65,7 +68,9 @@ nextflow run kentsislab/proteomegenerator3 \
    --long_read_assembler lraa
 ```
 
-To skip LRAA assembly and use pre-computed GTFs (proceeds directly to merge, reannotate, and quantify):
+## ORFs-only mode
+
+To skip transcript assembly entirely and use pre-computed GTF files for ORF prediction:
 
 ```bash
 nextflow run kentsislab/proteomegenerator3 \
@@ -74,14 +79,34 @@ nextflow run kentsislab/proteomegenerator3 \
    --fasta <REF_GENOME> \
    --gtf <REF_GTF> \
    --outdir results \
-   --long_read_assembler lraa \
-   --skip_lraa_discovery
+   --orfs_only
 ```
 
-When using `--skip_lraa_discovery`, your samplesheet must include `lraa_gtf` entries with paths to pre-computed LRAA GTF files.
+When using `--orfs_only`, your samplesheet must include `gtf` entries with paths to pre-computed GTF files. BAM/CRAM entries are not required.
+
+By default, if multiple GTFs are provided, they are merged into a cohort-level transcriptome before ORF prediction. Use `--skip_multisample` to process each GTF independently.
 
 > [!NOTE]
-> Bambu-specific parameters (`--NDR`, `--recommended_NDR`, `--skip_multisample`, `--skip_preprocessing`) only apply when `--long_read_assembler bambu` is selected.
+> Bambu-specific parameters (`--NDR`, `--recommended_NDR`, `--skip_preprocessing`) only apply when `--long_read_assembler bambu` is selected.
+
+## QC-only mode
+
+To run only read filtering and quality control without proceeding to transcript assembly or ORF prediction, use the `--qc_only` flag. This is useful for evaluating data quality before committing to a full pipeline run.
+
+```bash
+nextflow run kentsislab/proteomegenerator3 \
+   -profile docker \
+   --input samplesheet.csv \
+   --fasta <REF_GENOME> \
+   --gtf <REF_GTF> \
+   --outdir results \
+   --filter_reads \
+   --qc_only
+```
+
+QC is performed by the BAM QC subworkflow, which runs Samtools Stats, NanoPlot, RSeQC bamstat, and Picard CollectRnaSeqMetrics on each sample. Results are published under `qc/` and aggregated into the MultiQC report.
+
+To skip QC when running the full pipeline, use `--skip_qc`.
 
 ## Running the pipeline
 

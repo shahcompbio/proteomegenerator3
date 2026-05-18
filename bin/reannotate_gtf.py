@@ -37,6 +37,8 @@ COMMONS_COL = [
 TOOL_PREFIXES = {
     "stringtie": ("StrgTx", "StrgGene"),
     "lraa": ("LraaTx", "LraaGene"),
+    "merged": ("NovelTx", "NovelGene"),
+    "union": ("NovelTx", "NovelGene"),
 }
 
 
@@ -103,6 +105,15 @@ id_mapping_rows = []
 df = gffcmp
 ## nans give an error when doing ballgown estimates
 df["strand"] = df["strand"].apply(lambda x: x if x in ["+", "-"] else ".")
+## filter out unstranded transcripts (strand == ".") which cannot be used in
+## downstream ORF prediction or SQANTI classification
+unstranded_txids = df[df["strand"] == "."]["transcript_id"].unique()
+if len(unstranded_txids) > 0:
+    print(
+        f"Warning: removing {len(unstranded_txids)} transcript(s) with unstranded features: "
+        f"{', '.join(unstranded_txids[:5])}{'...' if len(unstranded_txids) > 5 else ''}"
+    )
+    df = df[~df["transcript_id"].isin(unstranded_txids)]
 ## filter out any transcript structures with exon boundaries that EXCEED the span of the contig (e.g. due to a gffcompare bug)
 reference_fai = pd.read_csv(
     args.reference_fai,

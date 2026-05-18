@@ -15,6 +15,7 @@ nextflow_pipeline {
                 outdir = "$outputDir"
                 long_read_assembler = 'lraa'
                 skip_preprocessing = true
+                skip_qc = true
             }
         }
 
@@ -34,6 +35,7 @@ nextflow_pipeline {
                 long_read_assembler = 'lraa'
                 skip_multisample = true
                 skip_preprocessing = true
+                skip_qc = true
             }
         }
 
