@@ -101,7 +101,7 @@ workflow PROTEOMEGENERATOR3 {
             if (!params.skip_multisample && sample_count > 1) {
                 // Merge all GTFs into a cohort-level GTF via GTF_MERGE_ANNOTATE
                 merge_input_ch = ch_gtfs.map { meta, gtf ->
-                    [meta + [tool: 'user_gtf'], gtf]
+                    [[id: "cohort", subject_id: "cohort", tool: 'user_gtf'], gtf]
                 }
                 GTF_MERGE_ORFS_ONLY(merge_input_ch, params.gtf, ref_fai)
                 ch_versions = ch_versions.mix(GTF_MERGE_ORFS_ONLY.out.versions)
