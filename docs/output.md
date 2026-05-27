@@ -62,6 +62,9 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 > [!NOTE]
 > When multiple assemblers are selected (e.g. `--long_read_assembler bambu,lraa`), assemblies are merged across assemblers via the GTF merge and annotate subworkflow before ORF prediction.
 
+> [!NOTE]
+> The GTF re-annotation step (assigning reference IDs to exact-match transcripts and tool-specific prefixes to novel transcripts) uses a Go implementation (`bin/reannotate_gtf.go`) for performance. On large cohort-level assemblies (800K+ transcripts), this completes in seconds rather than hours.
+
 ### QC
 
 <details markdown="1">

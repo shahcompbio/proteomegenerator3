@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Rewrote `reannotate_gtf.py` in Go (`reannotate_gtf.go`) for ~2700x speedup on large cohort GTFs. Validated against Python version on a 1000-transcript subset (identical logic: same exact-match ENST/ENSG assignments, same novel gene counts, same class_code distributions). Tested on full 821K-transcript SarcAtlas cohort GTF (921MB) in 12s vs estimated ~9h in Python.
+
 ## [1.3.1] - 2026-05-16
 
 ### Added
