@@ -276,10 +276,6 @@
                     "default": "bambu",
                     "pattern": "^(bambu|lraa|stringtie)(,(bambu|lraa|stringtie))*$",
                     "description": "Long-read transcript assembler(s) to use. Comma-separated for multiple (e.g. 'bambu,lraa,stringtie')."
-                },
-                "skip_multisample": {
-                    "type": "boolean",
-                    "description": "skip multisample transcript assembly and proteome"
                 }
             }
         },
@@ -375,6 +371,22 @@
                     "description": "if merging across samples, min TPM for detected transcript"
                 }
             }
+        },
+        "multi_sample_analysis": {
+            "title": "multi-sample analysis",
+            "type": "object",
+            "description": "options for multi-sample analysis",
+            "default": "",
+            "properties": {
+                "skip_multisample": {
+                    "type": "boolean",
+                    "description": "skip multisample transcript assembly and proteome"
+                },
+                "include_single_exons": {
+                    "type": "boolean",
+                    "description": "include single exons in merged gtf"
+                }
+            }
         }
     },
     "allOf": [
@@ -404,6 +416,9 @@
         },
         {
             "$ref": "#/$defs/short_read_rnaseq_options"
+        },
+        {
+            "$ref": "#/$defs/multi_sample_analysis"
         }
     ],
     "properties": {
