@@ -103,7 +103,7 @@ workflow PROTEOMEGENERATOR3 {
                 merge_input_ch = ch_gtfs.map { meta, gtf ->
                     [[id: "cohort", subject_id: "cohort", tool: 'user_gtf'], gtf]
                 }
-                GTF_MERGE_ORFS_ONLY(merge_input_ch, params.gtf, ref_fai)
+                GTF_MERGE_ORFS_ONLY(merge_input_ch, params.gtf, ref_fai, params.fasta)
                 ch_versions = ch_versions.mix(GTF_MERGE_ORFS_ONLY.out.versions)
                 downstream_gtf_ch = GTF_MERGE_ORFS_ONLY.out.gtf
             }
@@ -190,7 +190,7 @@ workflow PROTEOMEGENERATOR3 {
             //
             def assembler_count = params.long_read_assembler.split(',').size() + (params.short_reads ? 1 : 0)
             if (assembler_count > 1) {
-                GTF_MERGE_ANNOTATE(assembly_ch, params.gtf, ref_fai)
+                GTF_MERGE_ANNOTATE(assembly_ch, params.gtf, ref_fai, params.fasta)
                 ch_versions = ch_versions.mix(GTF_MERGE_ANNOTATE.out.versions)
                 downstream_gtf_ch = GTF_MERGE_ANNOTATE.out.gtf
             }

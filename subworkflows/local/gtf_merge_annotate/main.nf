@@ -1,7 +1,7 @@
 // Merge per-tool assembler GTFs into a single union assembly,
 // reannotate with reference IDs, track provenance, and classify isoforms.
 
-include { STRINGTIE_MERGE                     } from '../../../modules/nf-core/stringtie/merge/main'
+include { LRAA_MERGE                          } from '../../../modules/local/lraa/merge/main'
 include { GFFCOMPARE ; GFFCOMPARE as GFFCOMPARE_PROVENANCE } from '../../../modules/nf-core/gffcompare/main'
 include { REANNOTATEGTF                       } from '../../../modules/local/reannotategtf/main'
 include { LRAA_SQANTI                         } from '../../../modules/local/lraa/sqanti/main'
@@ -11,20 +11,22 @@ workflow GTF_MERGE_ANNOTATE {
     assembly_ch // channel: [ val(meta), path(gtf) ] — per-tool GTFs with meta.tool set
     ref_gtf // val: path to reference GTF
     ref_fai // channel: path to reference FASTA index
+    ref_fasta // val: path to reference genome FASTA
 
     main:
     ch_versions = Channel.empty()
-    // Collect all per-tool GTFs and merge with STRINGTIE_MERGE (no ref annotation)
+    // Collect all per-tool GTFs and merge with LRAA splice graph reconstruction
     merge_gtfs = assembly_ch
         .map { meta, gtf ->
             [[id: meta.subject_id], gtf]
         }
         .groupTuple()
-    STRINGTIE_MERGE(merge_gtfs, [[], []])
+    LRAA_MERGE(merge_gtfs, ref_fasta)
+    ch_versions = ch_versions.mix(LRAA_MERGE.out.versions)
 
     // Annotate merged GTF against reference annotation
     GFFCOMPARE(
-        STRINGTIE_MERGE.out.merged_gtf,
+        LRAA_MERGE.out.gtf,
         [[], [], []],
         [[id: "ref"], ref_gtf],
     )
