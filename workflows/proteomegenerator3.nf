@@ -12,8 +12,8 @@ include { SAMTOOLS_FAIDX                                      } from '../modules
 include { SAMTOOLS_CONVERT as CRAM_TO_BAM                     } from '../modules/nf-core/samtools/convert/main'
 include { PREDICT_ORFS                                        } from '../subworkflows/local/predict_orfs/main'
 include { FASTA_MERGE_ANNOTATE                                } from '../subworkflows/local/fasta_merge_annotate/main'
-include { GTF_MERGE_ANNOTATE                                  } from '../subworkflows/local/gtf_merge_annotate/main'
-include { GTF_MERGE_ANNOTATE as GTF_MERGE_ORFS_ONLY           } from '../subworkflows/local/gtf_merge_annotate/main'
+include { GTF_MERGE_SQANTI                                    } from '../subworkflows/local/gtf_merge_sqanti/main'
+include { GTF_MERGE_SQANTI as GTF_MERGE_ORFS_ONLY             } from '../subworkflows/local/gtf_merge_sqanti/main'
 include { BAM_ASSEMBLY_STRINGTIE as BAM_ASSEMBLY_STRINGTIE_LR } from '../subworkflows/local/bam_assembly_stringtie/main'
 include { BAM_ASSEMBLY_STRINGTIE as BAM_ASSEMBLY_STRINGTIE_SR } from '../subworkflows/local/bam_assembly_stringtie/main'
 include { MULTIQC                                             } from '../modules/nf-core/multiqc/main'
@@ -95,22 +95,15 @@ workflow PROTEOMEGENERATOR3 {
         if (params.orfs_only) {
             //
             // ORFs-only mode: skip assembly, use pre-computed GTFs
+            // Always route through GTF_MERGE_ORFS_ONLY for reannotation and SQANTI3 curation
+            // (the subworkflow handles single vs multi-sample internally via skip_union_assembly)
             //
-            sample_count = countSamples(params.input)
-
-            if (!params.skip_multisample && sample_count > 1) {
-                // Merge all GTFs into a cohort-level GTF via GTF_MERGE_ANNOTATE
-                merge_input_ch = ch_gtfs.map { meta, gtf ->
-                    [[id: "cohort", subject_id: "cohort", tool: 'user_gtf'], gtf]
-                }
-                GTF_MERGE_ORFS_ONLY(merge_input_ch, params.gtf, ref_fai, params.fasta)
-                ch_versions = ch_versions.mix(GTF_MERGE_ORFS_ONLY.out.versions)
-                downstream_gtf_ch = GTF_MERGE_ORFS_ONLY.out.gtf
+            merge_input_ch = ch_gtfs.map { meta, gtf ->
+                [[id: "cohort", subject_id: "cohort", tool: 'user_gtf'], gtf]
             }
-            else {
-                // Single GTF or skip_multisample: pass GTFs directly (no reannotation)
-                downstream_gtf_ch = ch_gtfs
-            }
+            GTF_MERGE_ORFS_ONLY(merge_input_ch, params.gtf, ref_fai, params.fasta, params.skip_sqanti3, params.skip_union_assembly)
+            ch_versions = ch_versions.mix(GTF_MERGE_ORFS_ONLY.out.versions)
+            downstream_gtf_ch = GTF_MERGE_ORFS_ONLY.out.gtf
         }
         else {
             //
@@ -186,18 +179,11 @@ workflow PROTEOMEGENERATOR3 {
                 assembly_ch = assembly_ch.mix(stringtie_ch)
             }
             //
-            // Merge assembler GTFs into consensus assembly (only when multiple assemblers)
+            // Annotate and curate assembly GTFs (merge if multiple assemblers, then SQANTI3)
             //
-            def assembler_count = params.long_read_assembler.split(',').size() + (params.short_reads ? 1 : 0)
-            if (assembler_count > 1) {
-                GTF_MERGE_ANNOTATE(assembly_ch, params.gtf, ref_fai, params.fasta)
-                ch_versions = ch_versions.mix(GTF_MERGE_ANNOTATE.out.versions)
-                downstream_gtf_ch = GTF_MERGE_ANNOTATE.out.gtf
-            }
-            else {
-                // Single assembler: use its GTF directly (already annotated)
-                downstream_gtf_ch = assembly_ch
-            }
+            GTF_MERGE_SQANTI(assembly_ch, params.gtf, ref_fai, params.fasta, params.skip_sqanti3, params.skip_union_assembly)
+            ch_versions = ch_versions.mix(GTF_MERGE_SQANTI.out.versions)
+            downstream_gtf_ch = GTF_MERGE_SQANTI.out.gtf
         }
         // end assembly mode selection
 

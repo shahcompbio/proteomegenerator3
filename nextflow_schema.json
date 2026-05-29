@@ -262,6 +262,17 @@
                 "qc_only": {
                     "type": "boolean",
                     "description": "Run only read filtering and QC (skip assembly and ORF prediction)"
+                },
+                "skip_sqanti3": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Skip SQANTI3 QC/filter/rescue transcriptome curation. Uses reannotated GTF directly."
+                },
+                "sqanti3_filter_type": {
+                    "type": "string",
+                    "default": "ml",
+                    "enum": ["ml", "rules"],
+                    "description": "SQANTI3 filter strategy: 'ml' (machine learning) or 'rules' (rules-based)."
                 }
             }
         },
@@ -381,6 +392,10 @@
                 "skip_multisample": {
                     "type": "boolean",
                     "description": "skip multisample transcript assembly and proteome"
+                },
+                "skip_union_assembly": {
+                    "type": "boolean",
+                    "description": "skip union assembly merge across assemblers (LRAA_MERGE)"
                 },
                 "include_single_exons": {
                     "type": "boolean",

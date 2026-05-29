@@ -1,0 +1,27 @@
+nextflow_pipeline {
+
+    name "Test SQANTI3 QC → Filter → Rescue chain"
+    script "../../../../tests/sqanti3_chain.nf"
+
+    tag "sqanti3"
+    tag "sqanti3/qc"
+    tag "sqanti3/filter"
+    tag "sqanti3/rescue"
+
+    test("SQANTI3 full chain — chr22 PacBio test isoforms") {
+
+        when {
+            params {
+                outdir = "$outputDir"
+                isoforms_gtf = 'https://raw.githubusercontent.com/ConesaLab/SQANTI3/master/test/test_data/isoforms/test_isoforms.gtf'
+                ref_gtf      = 'https://raw.githubusercontent.com/ConesaLab/SQANTI3/master/test/test_data/reference/test_reference.gtf'
+                ref_fasta    = 'https://raw.githubusercontent.com/ConesaLab/SQANTI3/master/test/test_data/genome/genome_test.fasta'
+                sqanti3_filter_type = 'ml'
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}
