@@ -98,8 +98,17 @@ workflow PROTEOMEGENERATOR3 {
             // Always route through GTF_MERGE_ORFS_ONLY for reannotation and SQANTI3 curation
             // (the subworkflow handles single vs multi-sample internally via skip_union_assembly)
             //
-            merge_input_ch = ch_gtfs.map { meta, gtf ->
-                [[id: "cohort", subject_id: "cohort", tool: 'user_gtf'], gtf]
+            if (!params.skip_multisample) {
+                // Cohort-level merge: collapse all samples under one subject_id
+                merge_input_ch = ch_gtfs.map { meta, gtf ->
+                    [[id: "cohort", subject_id: "cohort", tool: 'user_gtf'], gtf]
+                }
+            }
+            else {
+                // Per-sample processing: preserve original sample identity
+                merge_input_ch = ch_gtfs.map { meta, gtf ->
+                    [meta + [tool: 'user_gtf'], gtf]
+                }
             }
             GTF_MERGE_ORFS_ONLY(merge_input_ch, params.gtf, ref_fai, params.fasta, params.skip_sqanti3, params.skip_union_assembly)
             ch_versions = ch_versions.mix(GTF_MERGE_ORFS_ONLY.out.versions)
