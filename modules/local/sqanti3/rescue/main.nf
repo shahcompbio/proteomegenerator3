@@ -28,6 +28,8 @@ process SQANTI3_RESCUE {
     def rf_arg = (rescue_type == 'ml' && random_forest) ? "-r ${random_forest}" : ''
     prefix = task.ext.prefix ?: "${meta.id}"
     """
+    export TZ=UTC
+
     sqanti3_rescue.py \\
         --filter_class ${classification} \\
         --filtered_isoforms_gtf ${filtered_gtf} \\

@@ -27,6 +27,8 @@ process SQANTI3_FILTER {
     def filter_type = task.ext.filter_type ?: 'ml'
     prefix = task.ext.prefix ?: "${meta.id}"
     """
+    export TZ=UTC
+
     sqanti3_filter.py \\
         ${filter_type} \\
         --sqanti_class ${classification} \\
