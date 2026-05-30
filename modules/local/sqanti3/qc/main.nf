@@ -27,6 +27,11 @@ process SQANTI3_QC {
     def args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
     """
+    # Fix missing libbz2 symlink in container (needed by gtfToGenePred)
+    if [ ! -e /usr/local/lib/libbz2.so.1 ] && [ -e /usr/local/lib/libbz2.so.1.0.8 ]; then
+        ln -s /usr/local/lib/libbz2.so.1.0.8 /usr/local/lib/libbz2.so.1
+    fi
+
     sqanti3_qc.py \\
         --isoforms ${gtf} \\
         --refGTF ${ref_gtf} \\
