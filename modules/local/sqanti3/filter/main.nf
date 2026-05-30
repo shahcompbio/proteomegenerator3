@@ -26,7 +26,7 @@ process SQANTI3_FILTER {
     def filter_type = task.ext.filter_type ?: 'ml'
     prefix = task.ext.prefix ?: "${meta.id}"
     """
-    sqanti3 filter \\
+    sqanti3_filter.py \\
         ${filter_type} \\
         --sqanti_class ${classification} \\
         --filter_gtf ${corrected_gtf} \\
@@ -36,7 +36,7 @@ process SQANTI3_FILTER {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        sqanti3: \$(sqanti3 --version 2>&1 | sed -n 's/.*version //p' || echo "6.0.1")
+        sqanti3: \$(sqanti3_qc.py -v 2>&1 | sed 's/SQANTI3 //' || echo "6.0.1")
     END_VERSIONS
     """
 

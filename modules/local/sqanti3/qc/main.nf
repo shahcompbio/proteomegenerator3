@@ -27,19 +27,17 @@ process SQANTI3_QC {
     def args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
     """
-    sqanti3 qc \\
+    sqanti3_qc.py \\
         --isoforms ${gtf} \\
         --refGTF ${ref_gtf} \\
         --refFasta ${ref_fasta} \\
-        --skipORF \\
-        --force_id_ignore \\
         -o ${prefix} \\
         -d . \\
         ${args}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        sqanti3: \$(sqanti3 --version 2>&1 | sed -n 's/.*version //p' || echo "6.0.1")
+        sqanti3: \$(sqanti3_qc.py -v 2>&1 | sed 's/SQANTI3 //' || echo "6.0.1")
     END_VERSIONS
     """
 

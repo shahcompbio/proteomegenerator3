@@ -26,18 +26,18 @@ process SQANTI3_RESCUE {
     def args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
     """
-    sqanti3 rescue \\
-        --isoforms ${classification} \\
-        --gtf ${filtered_gtf} \\
-        --refGTF ${ref_gtf} \\
-        --refFasta ${ref_fasta} \\
+    sqanti3_rescue.py \\
+        --filter_class ${classification} \\
+        --filtered_isoforms_gtf ${filtered_gtf} \\
+        -rg ${ref_gtf} \\
+        -rf ${ref_fasta} \\
         -o ${prefix} \\
         -d . \\
         ${args}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        sqanti3: \$(sqanti3 --version 2>&1 | sed -n 's/.*version //p' || echo "6.0.1")
+        sqanti3: \$(sqanti3_qc.py -v 2>&1 | sed 's/SQANTI3 //' || echo "6.0.1")
     END_VERSIONS
     """
 
