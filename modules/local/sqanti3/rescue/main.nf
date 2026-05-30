@@ -37,7 +37,7 @@ process SQANTI3_RESCUE {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        sqanti3: \$(sqanti3_qc.py -v 2>&1 | sed 's/SQANTI3 //' || echo "6.0.1")
+        sqanti3: \$(sqanti3_qc.py -v 2>&1 | grep 'SQANTI3' | sed 's/.*SQANTI3 //' || echo "6.0.1")
     END_VERSIONS
     """
 
