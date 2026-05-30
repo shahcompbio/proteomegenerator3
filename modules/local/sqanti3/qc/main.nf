@@ -27,10 +27,10 @@ process SQANTI3_QC {
     def args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
     """
-    # Fix missing libbz2 symlink in container (needed by gtfToGenePred)
-    if [ ! -e /usr/local/lib/libbz2.so.1 ] && [ -e /usr/local/lib/libbz2.so.1.0.8 ]; then
-        ln -s /usr/local/lib/libbz2.so.1.0.8 /usr/local/lib/libbz2.so.1
-    fi
+    # Fix missing libbz2.so.1 symlink in container (needed by gtfToGenePred)
+    mkdir -p lib_fix
+    ln -sf /usr/local/lib/libbz2.so.1.0.8 lib_fix/libbz2.so.1
+    export LD_LIBRARY_PATH="\$PWD/lib_fix:\$LD_LIBRARY_PATH"
 
     sqanti3_qc.py \\
         --isoforms ${gtf} \\
