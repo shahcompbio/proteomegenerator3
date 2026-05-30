@@ -10,7 +10,7 @@ process SQANTI3_RESCUE {
         : 'biocontainers/sqanti3:6.0.1--hdfd78af_0'}"
 
     input:
-    tuple val(meta), path(classification), path(filtered_gtf)
+    tuple val(meta), path(classification), path(filtered_gtf), path(random_forest)
     path ref_gtf
     path ref_fasta
 
@@ -24,6 +24,8 @@ process SQANTI3_RESCUE {
 
     script:
     def args = task.ext.args ?: ''
+    def rescue_type = task.ext.rescue_type ?: 'rules'
+    def rf_arg = (rescue_type == 'ml' && random_forest) ? "-r ${random_forest}" : ''
     prefix = task.ext.prefix ?: "${meta.id}"
     """
     sqanti3_rescue.py \\
@@ -31,6 +33,8 @@ process SQANTI3_RESCUE {
         --filtered_isoforms_gtf ${filtered_gtf} \\
         -rg ${ref_gtf} \\
         -rf ${ref_fasta} \\
+        -s ${rescue_type} \\
+        ${rf_arg} \\
         -o ${prefix} \\
         -d . \\
         ${args}
