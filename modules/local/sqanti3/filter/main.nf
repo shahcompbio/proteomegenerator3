@@ -6,8 +6,8 @@ process SQANTI3_FILTER {
     label 'process_medium'
 
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
-        ? 'https://depot.galaxyproject.org/singularity/sqanti3:6.0.1--hdfd78af_0'
-        : 'biocontainers/sqanti3:6.0.1--hdfd78af_0'}"
+        ? 'docker://anaconesalab/sqanti3:v6.0.1'
+        : 'anaconesalab/sqanti3:v6.0.1'}"
 
     input:
     tuple val(meta), path(classification), path(corrected_gtf)
