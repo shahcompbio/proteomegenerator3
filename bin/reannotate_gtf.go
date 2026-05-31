@@ -10,28 +10,29 @@
 // Build: go build -o reannotate_gtf reannotate_gtf.go
 //
 // Testing (2026-05-27):
-//   Validated against reannotate_gtf.py on a 1000-transcript subset from
-//   a SarcAtlas cohort-level StringTie merge (cohort.annotated.gtf).
 //
-//   Correctness (1000-transcript subset):
-//     - Identical line counts: 5834 GTF lines, 1000 mapping rows
-//     - Identical exact-match (class_code '=') assignments: 77 transcripts
-//       recover the same reference ENST transcript_id and ENSG gene_id
-//     - Identical reference gene assignments: 613 transcripts with ENSG gene_id
-//     - Identical novel gene counts: 387 StrgGene* assignments
-//     - Identical class_code distribution across all 11 categories
-//     - Only difference: sequential counter numbering (StrgTx1, StrgTx2, ...)
-//       differs because Go preserves file order while Python groupby sorts
-//       alphabetically. This is functionally irrelevant.
+//	Validated against reannotate_gtf.py on a 1000-transcript subset from
+//	a SarcAtlas cohort-level StringTie merge (cohort.annotated.gtf).
 //
-//   Performance (full 821K-transcript file, 7.4M lines, 921MB):
-//     - Go:    11.7s (143% CPU — parallelized boundary check)
-//     - Python: ~40s for 1000 transcripts (extrapolates to ~9h for full file)
-//     - Speedup: ~2700x
+//	Correctness (1000-transcript subset):
+//	  - Identical line counts: 5834 GTF lines, 1000 mapping rows
+//	  - Identical exact-match (class_code '=') assignments: 77 transcripts
+//	    recover the same reference ENST transcript_id and ENSG gene_id
+//	  - Identical reference gene assignments: 613 transcripts with ENSG gene_id
+//	  - Identical novel gene counts: 387 StrgGene* assignments
+//	  - Identical class_code distribution across all 11 categories
+//	  - Only difference: sequential counter numbering (StrgTx1, StrgTx2, ...)
+//	    differs because Go preserves file order while Python groupby sorts
+//	    alphabetically. This is functionally irrelevant.
 //
-//   Format differences vs Python (intentional improvements):
-//     - Score field: Go writes '.' (correct GTF spec) vs Python writes 'nan'
-//     - Attribute order: gene_id, transcript_id first, then remaining attrs
+//	Performance (full 821K-transcript file, 7.4M lines, 921MB):
+//	  - Go:    11.7s (143% CPU — parallelized boundary check)
+//	  - Python: ~40s for 1000 transcripts (extrapolates to ~9h for full file)
+//	  - Speedup: ~2700x
+//
+//	Format differences vs Python (intentional improvements):
+//	  - Score field: Go writes '.' (correct GTF spec) vs Python writes 'nan'
+//	  - Attribute order: gene_id, transcript_id first, then remaining attrs
 package main
 
 import (
@@ -68,7 +69,7 @@ var toolPrefixes = map[string][2]string{
 	"union":     {"NovelTx", "NovelGene"},
 }
 
-const version = "1.0.0"
+const version = "1.0.1"
 
 func main() {
 	showVersion := flag.Bool("version", false, "print version and exit")
