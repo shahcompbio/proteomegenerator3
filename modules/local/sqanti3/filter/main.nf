@@ -7,7 +7,7 @@ process SQANTI3_FILTER {
 
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
         ? 'docker://anaconesalab/sqanti3:v6.0.1'
-        : 'anaconesalab/sqanti3:v6.0.1'}"
+        : 'docker.io/anaconesalab/sqanti3:v6.0.1'}"
 
     input:
     tuple val(meta), path(classification), path(corrected_gtf)
