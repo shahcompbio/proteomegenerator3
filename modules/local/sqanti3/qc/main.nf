@@ -5,7 +5,7 @@ process SQANTI3_QC {
     tag "${meta.id}"
     label 'process_high'
 
-    container "docker.io/anaconesalab/sqanti3:v6.0.1"
+    container "quay.io/shahlab_singularity/sqanti3:6.0.1"
 
     input:
     tuple val(meta), path(gtf)
