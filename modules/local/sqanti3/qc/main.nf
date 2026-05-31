@@ -17,6 +17,7 @@ process SQANTI3_QC {
     tuple val(meta), path("${prefix}_corrected.gtf"), emit: corrected_gtf
     tuple val(meta), path("${prefix}_corrected.fasta"), emit: corrected_fasta
     tuple val(meta), path("${prefix}_junctions.txt"), emit: junctions
+    tuple val(meta), path("${prefix}*.{pdf,png}"), emit: reports, optional: true
     path "versions.yml", emit: versions
 
     when:
