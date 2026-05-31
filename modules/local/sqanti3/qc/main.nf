@@ -5,9 +5,7 @@ process SQANTI3_QC {
     tag "${meta.id}"
     label 'process_high'
 
-    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
-        ? 'docker://docker.io/anaconesalab/sqanti3:v6.0.1'
-        : 'docker.io/anaconesalab/sqanti3:v6.0.1'}"
+    container "docker.io/anaconesalab/sqanti3:v6.0.1"
 
     input:
     tuple val(meta), path(gtf)
