@@ -45,7 +45,7 @@ process REANNOTATEGTF {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        reannotate_gtf: 1.0.0
+        reannotate_gtf: \$(reannotate_gtf --version 2>&1 || echo "1.0.0")
     END_VERSIONS
     """
 }
