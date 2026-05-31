@@ -11,8 +11,8 @@ process SQANTI3_FILTER {
     tuple val(meta), path(classification), path(corrected_gtf)
 
     output:
-    tuple val(meta), path("*result_classification.txt"), emit: classification
-    tuple val(meta), path("*inclusion-list.txt"), emit: inclusion_list
+    tuple val(meta), path("*_{ML,rules}_classification.txt"), emit: classification
+    tuple val(meta), path("*_pass_isoforms.txt"), emit: inclusion_list
     tuple val(meta), path("*.filtered.gtf"), emit: filtered_gtf
     tuple val(meta), path("*randomforest.RData"), emit: random_forest, optional: true
     path "versions.yml", emit: versions
@@ -44,8 +44,8 @@ process SQANTI3_FILTER {
     stub:
     prefix = task.ext.prefix ?: "${meta.id}"
     """
-    touch ${prefix}_MLresult_classification.txt
-    touch ${prefix}_inclusion-list.txt
+    touch ${prefix}_ML_classification.txt
+    touch ${prefix}_pass_isoforms.txt
     touch ${prefix}.filtered.gtf
     touch ${prefix}_randomforest.RData
 
