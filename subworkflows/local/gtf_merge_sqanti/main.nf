@@ -8,16 +8,17 @@ include { LRAA_MERGE                          } from '../../../modules/local/lra
 include { GFFCOMPARE ; GFFCOMPARE as GFFCOMPARE_PROVENANCE } from '../../../modules/nf-core/gffcompare/main'
 include { REANNOTATEGTF                       } from '../../../modules/local/reannotategtf/main'
 include { SQANTI3_QC                          } from '../../../modules/local/sqanti3/qc/main'
+include { SQANTI3_QC as SQANTI3_QC_FINAL      } from '../../../modules/local/sqanti3/qc/main'
 include { SQANTI3_FILTER                      } from '../../../modules/local/sqanti3/filter/main'
 include { SQANTI3_RESCUE                      } from '../../../modules/local/sqanti3/rescue/main'
 
 workflow GTF_MERGE_SQANTI {
     take:
-    assembly_ch       // channel: [ val(meta), path(gtf) ] — per-tool GTFs with meta.tool set
-    ref_gtf           // val: path to reference GTF
-    ref_fai           // channel: path to reference FASTA index
-    ref_fasta         // val: path to reference genome FASTA
-    skip_sqanti3      // val: boolean — skip SQANTI3 QC/filter/rescue
+    assembly_ch // channel: [ val(meta), path(gtf) ] — per-tool GTFs with meta.tool set
+    ref_gtf // val: path to reference GTF
+    ref_fai // channel: path to reference FASTA index
+    ref_fasta // val: path to reference genome FASTA
+    skip_sqanti3 // val: boolean — skip SQANTI3 QC/filter/rescue
     skip_union_assembly // val: boolean — skip LRAA_MERGE across assemblers
 
     main:
@@ -47,13 +48,11 @@ workflow GTF_MERGE_SQANTI {
         ch_versions = ch_versions.mix(LRAA_MERGE.out.versions)
 
         // Combine: merged GTFs + single-assembler GTFs (passed through)
-        merged_or_single_gtf = LRAA_MERGE.out.gtf
-            .mix(branch_gtfs.single.map { meta, gtfs -> [meta, gtfs[0]] })
+        merged_or_single_gtf = LRAA_MERGE.out.gtf.mix(branch_gtfs.single.map { meta, gtfs -> [meta, gtfs[0]] })
     }
     else {
         // Skip union assembly: pass each GTF through individually
-        merged_or_single_gtf = assembly_ch
-            .map { meta, gtf -> [[id: meta.subject_id], gtf] }
+        merged_or_single_gtf = assembly_ch.map { meta, gtf -> [[id: meta.subject_id], gtf] }
     }
 
     //
@@ -89,8 +88,7 @@ workflow GTF_MERGE_SQANTI {
         ch_versions = ch_versions.mix(SQANTI3_QC.out.versions)
 
         // Filter: ML-based artifact removal
-        sqanti3_filter_input = SQANTI3_QC.out.classification
-            .join(SQANTI3_QC.out.corrected_gtf, by: 0)
+        sqanti3_filter_input = SQANTI3_QC.out.classification.join(SQANTI3_QC.out.corrected_gtf, by: 0)
         SQANTI3_FILTER(sqanti3_filter_input)
         ch_versions = ch_versions.mix(SQANTI3_FILTER.out.versions)
 
@@ -104,21 +102,23 @@ workflow GTF_MERGE_SQANTI {
         ch_versions = ch_versions.mix(SQANTI3_RESCUE.out.versions)
 
         // Final curated GTF comes from rescue
-        curated_gtf = SQANTI3_RESCUE.out.rescued_gtf
-            .map { meta, gtf -> [meta + [tool: 'union'], gtf] }
+        curated_gtf = SQANTI3_RESCUE.out.rescued_gtf.map { meta, gtf -> [meta + [tool: 'union'], gtf] }
         sqanti_classification = SQANTI3_RESCUE.out.classification
+
+        // Final QC: classify the rescued transcriptome for reporting
+        SQANTI3_QC_FINAL(SQANTI3_RESCUE.out.rescued_gtf, ref_gtf, ref_fasta)
+        ch_versions = ch_versions.mix(SQANTI3_QC_FINAL.out.versions)
     }
     else {
         // Skip SQANTI3: use reannotated GTF directly
-        curated_gtf = REANNOTATEGTF.out.gtf
-            .map { meta, gtf -> [meta + [tool: 'union'], gtf] }
+        curated_gtf = REANNOTATEGTF.out.gtf.map { meta, gtf -> [meta + [tool: 'union'], gtf] }
         sqanti_classification = Channel.empty()
     }
 
     emit:
-    gtf            = curated_gtf              // channel: [ val(meta), path(gtf) ] — curated GTF (SQANTI3 rescued or reannotated)
+    gtf            = curated_gtf // channel: [ val(meta), path(gtf) ] — curated GTF (SQANTI3 rescued or reannotated)
     mapping        = REANNOTATEGTF.out.mapping // channel: [ val(meta), path(tsv) ] — ID mapping table
     tracking       = GFFCOMPARE_PROVENANCE.out.tracking // channel: [ val(meta), path(tracking) ] — provenance
-    classification = sqanti_classification    // channel: [ val(meta), path(txt) ] — SQANTI3 classification (empty if skipped)
-    versions       = ch_versions              // channel: [ versions.yml ]
+    classification = sqanti_classification // channel: [ val(meta), path(txt) ] — SQANTI3 classification (empty if skipped)
+    versions       = ch_versions // channel: [ versions.yml ]
 }
