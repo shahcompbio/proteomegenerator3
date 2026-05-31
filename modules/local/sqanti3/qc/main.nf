@@ -15,6 +15,7 @@ process SQANTI3_QC {
     output:
     tuple val(meta), path("${prefix}_classification.txt"), emit: classification
     tuple val(meta), path("${prefix}_corrected.gtf"), emit: corrected_gtf
+    tuple val(meta), path("${prefix}_corrected.fasta"), emit: corrected_fasta
     tuple val(meta), path("${prefix}_junctions.txt"), emit: junctions
     path "versions.yml", emit: versions
 
@@ -49,6 +50,7 @@ process SQANTI3_QC {
     """
     touch ${prefix}_classification.txt
     touch ${prefix}_corrected.gtf
+    touch ${prefix}_corrected.fasta
     touch ${prefix}_junctions.txt
 
     cat <<-END_VERSIONS > versions.yml

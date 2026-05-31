@@ -97,8 +97,9 @@ workflow GTF_MERGE_SQANTI {
         // Rescue: recover reference transcripts for discarded artifacts
         sqanti3_rescue_input = SQANTI3_FILTER.out.classification
             .join(SQANTI3_FILTER.out.filtered_gtf, by: 0)
+            .join(SQANTI3_QC.out.corrected_fasta, by: 0)
             .join(SQANTI3_FILTER.out.random_forest, by: 0, remainder: true)
-            .map { meta, classif, gtf, rf -> [meta, classif, gtf, rf ?: []] }
+            .map { meta, classif, gtf, fasta, rf -> [meta, classif, gtf, fasta, rf ?: []] }
         SQANTI3_RESCUE(sqanti3_rescue_input, ref_gtf, ref_fasta)
         ch_versions = ch_versions.mix(SQANTI3_RESCUE.out.versions)
 

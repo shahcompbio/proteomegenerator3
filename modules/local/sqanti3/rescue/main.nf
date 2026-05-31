@@ -8,7 +8,7 @@ process SQANTI3_RESCUE {
     container "quay.io/shahlab_singularity/sqanti3:6.0.1"
 
     input:
-    tuple val(meta), path(classification), path(filtered_gtf), path(random_forest)
+    tuple val(meta), path(classification), path(filtered_gtf), path(corrected_fasta), path(random_forest)
     path ref_gtf
     path ref_fasta
 
@@ -35,6 +35,7 @@ process SQANTI3_RESCUE {
         -rf ${ref_fasta} \\
         -s ${rescue_type} \\
         ${rf_arg} \\
+        --corrected_isoforms_fasta ${corrected_fasta} \\
         -o ${prefix} \\
         -d . \\
         ${args}
