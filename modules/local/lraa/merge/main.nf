@@ -22,6 +22,11 @@ process LRAA_MERGE {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
+    # Filter out unstranded transcripts (strand ".") that LRAA merge cannot handle
+    for gtf in sample_gtfs/*.gtf; do
+        awk -F'\\t' '\$7 == "+" || \$7 == "-"' "\$gtf" > "\$gtf.tmp" && mv "\$gtf.tmp" "\$gtf"
+    done
+
     merge_LRAA_GTFs.py \\
         --genome ${ref_genome} \\
         --gtf sample_gtfs/*.gtf \\
