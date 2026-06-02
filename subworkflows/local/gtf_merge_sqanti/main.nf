@@ -84,7 +84,7 @@ workflow GTF_MERGE_SQANTI {
     //
     if (!skip_sqanti3) {
         // QC: classify isoforms against reference (skipORF, force_id_ignore)
-        SQANTI3_QC(REANNOTATEGTF.out.gtf, ref_gtf, ref_fasta)
+        SQANTI3_QC(REANNOTATEGTF.out.gtf, ref_gtf, ref_fasta, ref_fai)
         ch_versions = ch_versions.mix(SQANTI3_QC.out.versions)
 
         // Filter: ML-based artifact removal
@@ -106,7 +106,7 @@ workflow GTF_MERGE_SQANTI {
         sqanti_classification = SQANTI3_RESCUE.out.classification
 
         // Final QC: classify the rescued transcriptome for reporting
-        SQANTI3_QC_FINAL(SQANTI3_RESCUE.out.rescued_gtf, ref_gtf, ref_fasta)
+        SQANTI3_QC_FINAL(SQANTI3_RESCUE.out.rescued_gtf, ref_gtf, ref_fasta, ref_fai)
         ch_versions = ch_versions.mix(SQANTI3_QC_FINAL.out.versions)
     }
     else {
