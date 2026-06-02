@@ -10,8 +10,8 @@ process SQANTI3_QC {
     input:
     tuple val(meta), path(gtf)
     path ref_gtf
-    path ref_fasta, StageInMode: 'copy'
-    path ref_fai, StageInMode: 'copy'
+    path ref_fasta, stageInMode: 'copy'
+    path ref_fai, stageInMode: 'copy'
 
     output:
     tuple val(meta), path("${prefix}_classification.txt"), emit: classification
