@@ -4,14 +4,15 @@
 process SQANTI3_QC {
     tag "${meta.id}"
     label 'process_high'
+    stageInMode 'copy'
 
     container "quay.io/shahlab_singularity/sqanti3:6.0.1"
 
     input:
     tuple val(meta), path(gtf)
     path ref_gtf
-    path ref_fasta, stageInMode: 'copy'
-    path ref_fai, stageInMode: 'copy'
+    path ref_fasta
+    path ref_fai
 
     output:
     tuple val(meta), path("${prefix}_classification.txt"), emit: classification
