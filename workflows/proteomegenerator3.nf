@@ -199,25 +199,27 @@ workflow PROTEOMEGENERATOR3 {
         //
         // Downstream: single path
         //
-        // Extract cDNA
-        GFFREAD(downstream_gtf_ch, params.fasta)
-        ch_versions = ch_versions.mix(GFFREAD.out.versions)
-        // Predict ORFs with transdecoder
-        PREDICT_ORFS(GFFREAD.out.gffread_fasta, params.uniprot_proteome)
-        ch_versions = ch_versions.mix(PREDICT_ORFS.out.versions)
-        // Make uniprot-style fasta for msfragger and create index tables
-        ch_orfs = PREDICT_ORFS.out.ORFs
-            .join(downstream_gtf_ch, by: 0)
-            .combine(PREDICT_ORFS.out.swissprot.map { _meta, fasta -> fasta })
-        FASTA_MERGE_ANNOTATE(
-            ch_orfs,
-            params.input,
-            params.skip_multisample,
-            PREDICT_ORFS.out.swissprot,
-            ch_fusion_tsvs,
-            params.fusions,
-        )
-        ch_versions = ch_versions.mix(FASTA_MERGE_ANNOTATE.out.versions)
+        if (!params.skip_orfs) {
+            // Extract cDNA
+            GFFREAD(downstream_gtf_ch, params.fasta)
+            ch_versions = ch_versions.mix(GFFREAD.out.versions)
+            // Predict ORFs with transdecoder
+            PREDICT_ORFS(GFFREAD.out.gffread_fasta, params.uniprot_proteome)
+            ch_versions = ch_versions.mix(PREDICT_ORFS.out.versions)
+            // Make uniprot-style fasta for msfragger and create index tables
+            ch_orfs = PREDICT_ORFS.out.ORFs
+                .join(downstream_gtf_ch, by: 0)
+                .combine(PREDICT_ORFS.out.swissprot.map { _meta, fasta -> fasta })
+            FASTA_MERGE_ANNOTATE(
+                ch_orfs,
+                params.input,
+                params.skip_multisample,
+                PREDICT_ORFS.out.swissprot,
+                ch_fusion_tsvs,
+                params.fusions,
+            )
+            ch_versions = ch_versions.mix(FASTA_MERGE_ANNOTATE.out.versions)
+        }
     }
     // end if (!params.qc_only)
     // collect versions

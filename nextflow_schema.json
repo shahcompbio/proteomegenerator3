@@ -327,6 +327,11 @@
             "description": "ORF prediction parameters",
             "default": "",
             "properties": {
+                "skip_orfs": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Skip ORF prediction (Transdecoder) and produce only assembled transcriptome GTF"
+                },
                 "single_best_only": {
                     "type": "boolean",
                     "description": "just include single best ORF per transcript"
