@@ -22,7 +22,7 @@ workflow GTF_MERGE_SQANTI {
     skip_union_assembly // val: boolean — skip LRAA_MERGE across assemblers
 
     main:
-    ch_versions = Channel.empty()
+    ch_versions = channel.empty()
 
     //
     // Step 1: Conditional merge (only when multiple assemblers and not skipped)
@@ -49,42 +49,46 @@ workflow GTF_MERGE_SQANTI {
 
         // Combine: merged GTFs + single-assembler GTFs (passed through)
         merged_or_single_gtf = LRAA_MERGE.out.gtf.mix(branch_gtfs.single.map { meta, gtfs -> [meta, gtfs[0]] })
+
+        //
+        // Annotate merged GTF against reference
+        //
+        GFFCOMPARE(
+            merged_or_single_gtf,
+            [[], [], []],
+            [[id: "ref"], ref_gtf],
+        )
+        ch_versions = ch_versions.mix(GFFCOMPARE.out.versions)
+
+        // Reannotate with reference IDs (ENST/ENSG for canonical, novel prefixes for new)
+        REANNOTATEGTF(GFFCOMPARE.out.annotated_gtf, ref_fai)
+        ch_versions = ch_versions.mix(REANNOTATEGTF.out.versions)
+
+        // Provenance tracking (which tool(s) contributed each transcript)
+        GFFCOMPARE_PROVENANCE(
+            assembly_ch.map { _meta, gtf -> gtf }.collect().map { gtfs -> [[id: "provenance"], gtfs] },
+            [[], [], []],
+            REANNOTATEGTF.out.gtf,
+        )
+        ch_versions = ch_versions.mix(GFFCOMPARE_PROVENANCE.out.versions)
+
+        annotated_gtf = REANNOTATEGTF.out.gtf
+        ch_mapping = REANNOTATEGTF.out.mapping
+        ch_tracking = GFFCOMPARE_PROVENANCE.out.tracking
     }
     else {
-        // Skip union assembly: pass each GTF through individually
-        merged_or_single_gtf = assembly_ch.map { meta, gtf -> [[id: meta.subject_id], gtf] }
+        // Skip union assembly: GTFs are already annotated by their respective assembler workflows
+        annotated_gtf = assembly_ch.map { meta, gtf -> [[id: meta.subject_id], gtf] }
+        ch_mapping = channel.empty()
+        ch_tracking = channel.empty()
     }
 
     //
-    // Step 2: Annotate against reference
-    //
-    GFFCOMPARE(
-        merged_or_single_gtf,
-        [[], [], []],
-        [[id: "ref"], ref_gtf],
-    )
-    ch_versions = ch_versions.mix(GFFCOMPARE.out.versions)
-
-    // Reannotate with reference IDs (ENST/ENSG for canonical, novel prefixes for new)
-    REANNOTATEGTF(GFFCOMPARE.out.annotated_gtf, ref_fai)
-    ch_versions = ch_versions.mix(REANNOTATEGTF.out.versions)
-
-    //
-    // Step 3: Provenance tracking (which tool(s) contributed each transcript)
-    //
-    GFFCOMPARE_PROVENANCE(
-        assembly_ch.map { _meta, gtf -> gtf }.collect().map { gtfs -> [[id: "provenance"], gtfs] },
-        [[], [], []],
-        REANNOTATEGTF.out.gtf,
-    )
-    ch_versions = ch_versions.mix(GFFCOMPARE_PROVENANCE.out.versions)
-
-    //
-    // Step 4: SQANTI3 QC → Filter → Rescue (unless skipped)
+    // SQANTI3 QC → Filter → Rescue (unless skipped)
     //
     if (!skip_sqanti3) {
         // QC: classify isoforms against reference (skipORF, force_id_ignore)
-        SQANTI3_QC(REANNOTATEGTF.out.gtf, ref_gtf, ref_fasta, ref_fai)
+        SQANTI3_QC(annotated_gtf, ref_gtf, ref_fasta, ref_fai)
         ch_versions = ch_versions.mix(SQANTI3_QC.out.versions)
 
         // Filter: ML-based artifact removal
@@ -110,15 +114,15 @@ workflow GTF_MERGE_SQANTI {
         ch_versions = ch_versions.mix(SQANTI3_QC_FINAL.out.versions)
     }
     else {
-        // Skip SQANTI3: use reannotated GTF directly
-        curated_gtf = REANNOTATEGTF.out.gtf.map { meta, gtf -> [meta + [tool: 'union'], gtf] }
-        sqanti_classification = Channel.empty()
+        // Skip SQANTI3: use annotated GTF directly
+        curated_gtf = annotated_gtf.map { meta, gtf -> [meta + [tool: 'union'], gtf] }
+        sqanti_classification = channel.empty()
     }
 
     emit:
-    gtf            = curated_gtf // channel: [ val(meta), path(gtf) ] — curated GTF (SQANTI3 rescued or reannotated)
-    mapping        = REANNOTATEGTF.out.mapping // channel: [ val(meta), path(tsv) ] — ID mapping table
-    tracking       = GFFCOMPARE_PROVENANCE.out.tracking // channel: [ val(meta), path(tracking) ] — provenance
+    gtf            = curated_gtf // channel: [ val(meta), path(gtf) ] — curated GTF (SQANTI3 rescued or annotated)
+    mapping        = ch_mapping // channel: [ val(meta), path(tsv) ] — ID mapping table (empty when skip_union_assembly)
+    tracking       = ch_tracking // channel: [ val(meta), path(tracking) ] — provenance (empty when skip_union_assembly)
     classification = sqanti_classification // channel: [ val(meta), path(txt) ] — SQANTI3 classification (empty if skipped)
     versions       = ch_versions // channel: [ versions.yml ]
 }
