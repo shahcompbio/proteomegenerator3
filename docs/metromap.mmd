@@ -1,13 +1,23 @@
 %%metro title: ProteomeGenerator3
 %%metro style: dark
 %%metro files: bam_in | BAM/CRAM
+%%metro files: fusion_in | Fusion TSV
 %%metro file: proteome_out | proteins.fasta
 %%metro file: report_out | MultiQC Report
 %%metro line: bambu | Bambu | #2196F3
 %%metro line: lraa | LRAA | #2db572
 %%metro line: stie | StringTie | #f5a623
+%%metro line: fusion | Fusions (optional) | #e63946 | dashed
 %%metro line: qc | Quality Control | #9d4edd
-%%metro legend: bl
+%%metro legend: br
+
+%%metro grid: input_section | 0,0
+%%metro grid: preprocessing | 1,0
+%%metro grid: assembly_section | 2,0
+%%metro grid: curation_section | 3,0
+%%metro grid: orf_section | 4,0
+%%metro grid: qc_section | 1,1
+%%metro grid: proteome_section | 3,1
 
 graph LR
 
@@ -38,16 +48,18 @@ graph LR
         samtools_stats_qc[SAMTOOLS\nSTATS]
         rseqc_bam[RSeQC]
         picard_rna[PICARD]
+        multiqc[MultiQC]
         report_out[ ]
 
         samtools_sort_idx -->|qc| nanoplot
         samtools_sort_idx -->|qc| samtools_stats_qc
         samtools_sort_idx -->|qc| rseqc_bam
         samtools_sort_idx -->|qc| picard_rna
-        nanoplot -->|qc| report_out
-        samtools_stats_qc -->|qc| report_out
-        rseqc_bam -->|qc| report_out
-        picard_rna -->|qc| report_out
+        nanoplot -->|qc| multiqc
+        samtools_stats_qc -->|qc| multiqc
+        rseqc_bam -->|qc| multiqc
+        picard_rna -->|qc| multiqc
+        multiqc -->|qc| report_out
     end
 
     subgraph assembly_section [Transcript Assembly]
@@ -77,7 +89,7 @@ graph LR
 
     subgraph orf_section [ORF Prediction]
         %%metro entry: left | bambu, lraa, stie
-        %%metro exit: right | bambu, lraa, stie
+        %%metro exit: bottom | bambu, lraa, stie
         gffread[GFFREAD]
         philosopher_db[PHILOSOPHER\nDATABASE]
         diamond_makedb[DIAMOND\nMAKEDB]
@@ -93,15 +105,20 @@ graph LR
     end
 
     subgraph proteome_section [Proteome Assembly]
-        %%metro entry: left | bambu, lraa, stie
+        %%metro direction: RL
+        %%metro entry: right | bambu, lraa, stie
+        fusion_in[ ]
         td2fasta[TRANSDECODER2FASTA]
+        fusionfasta[FUSIONFASTA]
         cat_cat[CAT_CAT]
         seqkit_rmdup[SEQKIT_RMDUP]
         proteome_out[ ]
 
+        fusion_in -->|fusion| fusionfasta
+        fusionfasta -->|fusion| cat_cat
         td2fasta -->|bambu,lraa,stie| cat_cat
-        cat_cat -->|bambu,lraa,stie| seqkit_rmdup
-        seqkit_rmdup -->|bambu,lraa,stie| proteome_out
+        cat_cat -->|bambu,lraa,stie,fusion| seqkit_rmdup
+        seqkit_rmdup -->|bambu,lraa,stie,fusion| proteome_out
     end
 
     %% Inter-section edges
