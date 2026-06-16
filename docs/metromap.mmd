@@ -8,60 +8,34 @@
 %%metro line: lraa | LRAA | #2db572
 %%metro line: stie | StringTie2 | #f5a623
 %%metro line: fusion | Fusions (optional) | #e63946 | dashed
-%%metro line: qc | Quality Control | #9d4edd
 %%metro legend: br
 
-%%metro grid: input_section | 0,0
-%%metro grid: preprocessing | 1,0
-%%metro grid: assembly_section | 2,0
-%%metro grid: curation_section | 3,0
-%%metro grid: orf_section | 4,0
-%%metro grid: qc_section | 0,1
-%%metro grid: proteome_section | 3,1
+%%metro grid: preprocess | 0,0
+%%metro grid: assembly | 1,0
+%%metro grid: curation | 2,0
+%%metro grid: orf_pred | 3,0
+%%metro grid: proteome | 2,1
+%%metro grid: qc_report | 0,1
 
 graph LR
 
-    subgraph input_section [Input & Reference]
-        %%metro exit: right | bambu, lraa, stie, qc
+    subgraph preprocess [Pre-processing]
+        %%metro exit: right | bambu, lraa, stie
         bam_in[ ]
         cram_to_bam[CRAM_TO_BAM]
         samtools_faidx[SAMTOOLS_FAIDX]
-
-        bam_in -->|bambu,lraa,stie,qc| cram_to_bam
-        cram_to_bam -->|bambu,lraa,stie,qc| samtools_faidx
-    end
-
-    subgraph preprocessing [Preprocessing]
-        %%metro entry: left | bambu, lraa, stie
-        %%metro exit: right | bambu, lraa, stie
+        samtools_sort_idx[SAMTOOLS\nSORT/INDEX]
         filter_reads[FILTER_READS]
         bambu_rc[BAMBU_READCLASSES]
 
+        bam_in -->|bambu,lraa,stie| cram_to_bam
+        cram_to_bam -->|bambu,lraa,stie| samtools_faidx
+        samtools_faidx -->|bambu,lraa,stie| samtools_sort_idx
+        samtools_sort_idx -->|bambu,lraa,stie| filter_reads
         filter_reads -->|bambu| bambu_rc
     end
 
-    subgraph qc_section [Quality Control]
-        %%metro direction: RL
-        samtools_sort_idx[SAMTOOLS\nSORT/INDEX]
-        nanoplot[NanoPlot]
-        samtools_stats_qc[SAMTOOLS\nSTATS]
-        rseqc_bam[RSeQC]
-        picard_rna[PICARD]
-        multiqc[MultiQC]
-        report_out[ ]
-
-        samtools_sort_idx -->|qc| nanoplot
-        samtools_sort_idx -->|qc| samtools_stats_qc
-        samtools_sort_idx -->|qc| rseqc_bam
-        samtools_sort_idx -->|qc| picard_rna
-        nanoplot -->|qc| multiqc
-        samtools_stats_qc -->|qc| multiqc
-        rseqc_bam -->|qc| multiqc
-        picard_rna -->|qc| multiqc
-        multiqc -->|qc| report_out
-    end
-
-    subgraph assembly_section [Transcript Assembly]
+    subgraph assembly [Transcript Assembly]
         %%metro entry: left | bambu, lraa, stie
         %%metro exit: right | bambu, lraa, stie
         bambu_asm[BAMBU]
@@ -69,7 +43,7 @@ graph LR
         stie_asm[STRINGTIE2]
     end
 
-    subgraph curation_section [GTF Merge & Curation]
+    subgraph curation [GTF Merge & Curation]
         %%metro entry: left | bambu, lraa, stie
         %%metro exit: right | bambu, lraa, stie
         union_merge[LRAA_MERGE\n(union)]
@@ -86,7 +60,7 @@ graph LR
         sqanti3_filter -->|bambu,lraa,stie| sqanti3_rescue
     end
 
-    subgraph orf_section [ORF Prediction]
+    subgraph orf_pred [ORF Prediction]
         %%metro entry: left | bambu, lraa, stie
         %%metro exit: bottom | bambu, lraa, stie
         gffread[GFFREAD]
@@ -103,9 +77,11 @@ graph LR
         diamond_blast -->|bambu,lraa,stie| td_predict
     end
 
-    subgraph proteome_section [Proteome Assembly]
+    subgraph proteome [Proteome Assembly]
         %%metro direction: RL
         %%metro entry: right | bambu, lraa, stie
+        %%metro exit: left | bambu, lraa, stie, fusion
+        %%metro off_track: proteome_out
         fusion_in[ ]
         td2fasta[TRANSDECODER2FASTA]
         fusionfasta[FUSIONFASTA]
@@ -120,9 +96,26 @@ graph LR
         seqkit_rmdup -->|bambu,lraa,stie,fusion| proteome_out
     end
 
+    subgraph qc_report [Quality Control & Reporting]
+        %%metro direction: RL
+        %%metro entry: right | bambu, lraa, stie, fusion
+        nanoplot[NanoPlot]
+        samtools_stats[SAMTOOLS\nSTATS]
+        rseqc[RSeQC]
+        picard[PICARD]
+        seqkit_stats[SEQKIT\nSTATS]
+        multiqc[MultiQC]
+        report_out[ ]
+
+        nanoplot -->|bambu,lraa,stie,fusion| samtools_stats
+        samtools_stats -->|bambu,lraa,stie,fusion| rseqc
+        rseqc -->|bambu,lraa,stie,fusion| picard
+        picard -->|bambu,lraa,stie,fusion| seqkit_stats
+        seqkit_stats -->|bambu,lraa,stie,fusion| multiqc
+        multiqc -->|bambu,lraa,stie,fusion| report_out
+    end
+
     %% Inter-section edges
-    samtools_faidx -->|bambu,lraa,stie| filter_reads
-    samtools_faidx -->|qc| samtools_sort_idx
     filter_reads -->|lraa| lraa_asm
     filter_reads -->|stie| stie_asm
     bambu_rc -->|bambu| bambu_asm
@@ -131,3 +124,4 @@ graph LR
     stie_asm -->|stie| union_merge
     sqanti3_rescue -->|bambu,lraa,stie| gffread
     td_predict -->|bambu,lraa,stie| td2fasta
+    seqkit_rmdup -->|bambu,lraa,stie,fusion| nanoplot
