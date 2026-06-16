@@ -1,0 +1,117 @@
+%%metro title: ProteomeGenerator3
+%%metro style: dark
+%%metro files: bam_in | BAM/CRAM
+%%metro file: proteome_out | proteins.fasta
+%%metro file: report_out | MultiQC Report
+%%metro line: bambu | Bambu | #2196F3
+%%metro line: lraa | LRAA | #2db572
+%%metro line: stie | StringTie | #f5a623
+%%metro line: qc | Quality Control | #9d4edd
+%%metro legend: bl
+
+graph LR
+
+    subgraph input_section [Input & Reference]
+        %%metro exit: right | bambu, lraa, stie, qc
+        bam_in[ ]
+        cram_to_bam[CRAM_TO_BAM]
+        samtools_faidx[SAMTOOLS_FAIDX]
+
+        bam_in -->|bambu,lraa,stie,qc| cram_to_bam
+        cram_to_bam -->|bambu,lraa,stie,qc| samtools_faidx
+    end
+
+    subgraph preprocessing [Preprocessing]
+        %%metro entry: left | bambu, lraa, stie, qc
+        %%metro exit: right | bambu, lraa, stie
+        %%metro exit: bottom | qc
+        filter_reads[FILTER_READS]
+        bambu_rc[BAMBU_READCLASSES]
+
+        filter_reads -->|bambu| bambu_rc
+    end
+
+    subgraph qc_section [Quality Control]
+        %%metro entry: top | qc
+        samtools_sort_idx[SAMTOOLS\nSORT/INDEX]
+        nanoplot[NanoPlot]
+        samtools_stats_qc[SAMTOOLS\nSTATS]
+        rseqc_bam[RSeQC]
+        picard_rna[PICARD]
+        report_out[ ]
+
+        samtools_sort_idx -->|qc| nanoplot
+        samtools_sort_idx -->|qc| samtools_stats_qc
+        samtools_sort_idx -->|qc| rseqc_bam
+        samtools_sort_idx -->|qc| picard_rna
+        nanoplot -->|qc| report_out
+        samtools_stats_qc -->|qc| report_out
+        rseqc_bam -->|qc| report_out
+        picard_rna -->|qc| report_out
+    end
+
+    subgraph assembly_section [Transcript Assembly]
+        %%metro entry: left | bambu, lraa, stie
+        %%metro exit: right | bambu, lraa, stie
+        bambu_asm[BAMBU]
+        lraa_asm[LRAA]
+        stie_asm[STRINGTIE]
+    end
+
+    subgraph curation_section [GTF Merge & Curation]
+        %%metro entry: left | bambu, lraa, stie
+        %%metro exit: right | bambu, lraa, stie
+        union_merge[LRAA_MERGE\n(union)]
+        gffcompare_cur[GFFCOMPARE]
+        reannotategtf[REANNOTATEGTF]
+        sqanti3_qc[SQANTI3 QC]
+        sqanti3_filter[SQANTI3 FILTER]
+        sqanti3_rescue[SQANTI3 RESCUE]
+
+        union_merge -->|bambu,lraa,stie| gffcompare_cur
+        gffcompare_cur -->|bambu,lraa,stie| reannotategtf
+        reannotategtf -->|bambu,lraa,stie| sqanti3_qc
+        sqanti3_qc -->|bambu,lraa,stie| sqanti3_filter
+        sqanti3_filter -->|bambu,lraa,stie| sqanti3_rescue
+    end
+
+    subgraph orf_section [ORF Prediction]
+        %%metro entry: left | bambu, lraa, stie
+        %%metro exit: right | bambu, lraa, stie
+        gffread[GFFREAD]
+        philosopher_db[PHILOSOPHER\nDATABASE]
+        diamond_makedb[DIAMOND\nMAKEDB]
+        td_longorf[TRANSDECODER\nLONGORF]
+        diamond_blast[DIAMOND\nBLASTP]
+        td_predict[TRANSDECODER\nPREDICT]
+
+        gffread -->|bambu,lraa,stie| td_longorf
+        philosopher_db -->|bambu,lraa,stie| diamond_makedb
+        diamond_makedb -->|bambu,lraa,stie| diamond_blast
+        td_longorf -->|bambu,lraa,stie| diamond_blast
+        diamond_blast -->|bambu,lraa,stie| td_predict
+    end
+
+    subgraph proteome_section [Proteome Assembly]
+        %%metro entry: left | bambu, lraa, stie
+        td2fasta[TRANSDECODER2FASTA]
+        cat_cat[CAT_CAT]
+        seqkit_rmdup[SEQKIT_RMDUP]
+        proteome_out[ ]
+
+        td2fasta -->|bambu,lraa,stie| cat_cat
+        cat_cat -->|bambu,lraa,stie| seqkit_rmdup
+        seqkit_rmdup -->|bambu,lraa,stie| proteome_out
+    end
+
+    %% Inter-section edges
+    samtools_faidx -->|bambu,lraa,stie,qc| filter_reads
+    filter_reads -->|qc| samtools_sort_idx
+    filter_reads -->|lraa| lraa_asm
+    filter_reads -->|stie| stie_asm
+    bambu_rc -->|bambu| bambu_asm
+    bambu_asm -->|bambu| union_merge
+    lraa_asm -->|lraa| union_merge
+    stie_asm -->|stie| union_merge
+    sqanti3_rescue -->|bambu,lraa,stie| gffread
+    td_predict -->|bambu,lraa,stie| td2fasta
