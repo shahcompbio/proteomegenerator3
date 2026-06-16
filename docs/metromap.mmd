@@ -22,8 +22,7 @@
 graph LR
 
     subgraph input_section [Input & Reference]
-        %%metro exit: right | bambu, lraa, stie
-        %%metro exit: bottom | qc
+        %%metro exit: right | bambu, lraa, stie, qc
         bam_in[ ]
         cram_to_bam[CRAM_TO_BAM]
         samtools_faidx[SAMTOOLS_FAIDX]
@@ -42,7 +41,7 @@ graph LR
     end
 
     subgraph qc_section [Quality Control]
-        %%metro entry: top | qc
+        %%metro direction: RL
         samtools_sort_idx[SAMTOOLS\nSORT/INDEX]
         nanoplot[NanoPlot]
         samtools_stats_qc[SAMTOOLS\nSTATS]
