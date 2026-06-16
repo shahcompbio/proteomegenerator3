@@ -10,6 +10,8 @@
 
 ## Introduction
 
+![ProteomeGenerator3 pipeline diagram](docs/metromap.svg)
+
 **kentsislab/proteomegenerator3** is a bioinformatics pipeline that can be used to create sample-specific, proteogenomics search databases from long-read RNAseq data. It takes in a samplesheet and aligned long-read RNAseq data as input, performs guided, de novo transcript assembly, ORF prediction, and then produces a protein fasta file suitable for use with computational proteomics search platforms (e.g, Fragpipe, DIA-NN).
 
 <!-- TODO nf-core:
