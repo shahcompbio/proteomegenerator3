@@ -23,4 +23,3 @@ make -C docs
 > **Note:** the `--theme light` and `--x-spacing 80` options are render-time
 > flags and are **not** stored in `metromap.mmd`, so they must be passed on
 > every render. The [`Makefile`](Makefile) captures them.
-
