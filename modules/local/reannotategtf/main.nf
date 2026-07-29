@@ -5,7 +5,7 @@ process REANNOTATEGTF {
     label 'process_single'
 
     conda "${moduleDir}/environment.yml"
-    container "quay.io/shahlab_singularity/reannotate_gtf:1.0.0"
+    container "quay.io/shahlab_singularity/reannotate_gtf:260605_1.0.1"
 
     input:
     tuple val(meta), path(annotated_gtf)
@@ -32,7 +32,7 @@ process REANNOTATEGTF {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        reannotate_gtf: \$(reannotate_gtf --version 2>&1 || echo "1.0.0")
+        reannotate_gtf: \$(reannotate_gtf --version 2>&1 || echo "1.0.1")
     END_VERSIONS
     """
 
@@ -45,7 +45,7 @@ process REANNOTATEGTF {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        reannotate_gtf: \$(reannotate_gtf --version 2>&1 || echo "1.0.0")
+        reannotate_gtf: "1.0.1"
     END_VERSIONS
     """
 }

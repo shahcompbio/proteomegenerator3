@@ -1,0 +1,2 @@
+subject_id,sample_id,sequence_type,filetype,filepath
+SUBJECT1,SAMPLE1,long_read,gtf,https://raw.githubusercontent.com/ConesaLab/SQANTI3/master/test/test_data/isoforms/test_isoforms.gtf

@@ -11,5 +11,3 @@ LABEL org.opencontainers.image.description="reannotate_gtf: Re-annotate gffcompa
 
 RUN apk add --no-cache bash
 COPY --from=builder /build/reannotate_gtf /usr/local/bin/reannotate_gtf
-
-ENTRYPOINT ["reannotate_gtf"]
