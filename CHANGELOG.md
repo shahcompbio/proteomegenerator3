@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-07-29
+
 ### Added
 
 - SQANTI3 QC/Filter/Rescue transcriptome curation via new `GTF_MERGE_SQANTI` subworkflow (replaces `GTF_MERGE_ANNOTATE`), classifying isoforms against the reference, removing ML- or rules-flagged artifacts, and rescuing discarded transcripts that match reference annotations

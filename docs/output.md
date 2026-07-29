@@ -11,6 +11,7 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 - [Bambu](#bambu) - Read class generation, transcript assembly, and quantification
 - [LRAA](#lraa) - Long-read assembly and annotation (alternative assembler)
 - [StringTie](#stringtie) - Long-read transcript assembly (alternative assembler)
+- [SQANTI3](#sqanti3) - Transcriptome curation (QC, filtering, and rescue)
 - [QC](#qc) - BAM quality control (Samtools Stats, NanoPlot, RSeQC, Picard)
 - [Transdecoder](#transdecoder) - ORF prediction
 - [Proteome](#proteome) - Final proteome FASTA database with deduplication and statistics
@@ -60,10 +61,32 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 [StringTie](https://ccb.jhu.edu/software/stringtie/) long-read mode is an alternative long-read transcript assembler. Select with `--long_read_assembler stringtie`. Short-read and long-read StringTie outputs are published to separate directories.
 
 > [!NOTE]
-> When multiple assemblers are selected (e.g. `--long_read_assembler bambu,lraa`), assemblies are merged across assemblers via the GTF merge and annotate subworkflow before ORF prediction.
+> When multiple assemblers are selected (e.g. `--long_read_assembler bambu,lraa`), assemblies are merged across assemblers via the GTF merge and SQANTI3 curation subworkflow before ORF prediction.
 
 > [!NOTE]
 > The GTF re-annotation step (assigning reference IDs to exact-match transcripts and tool-specific prefixes to novel transcripts) uses a Go implementation (`bin/reannotate_gtf.go`) for performance. On large cohort-level assemblies (800K+ transcripts), this completes in seconds rather than hours.
+
+### SQANTI3
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `transcriptome/raw/`
+  - `*.gtf`: Merged and reannotated transcriptome GTF (pre-SQANTI3)
+  - `gffcompare/`: Provenance tracking of which assembler(s) contributed each transcript
+- `transcriptome/sqanti3/prefiltered_qc/`
+  - `*_classification.txt`: SQANTI3 isoform classification against the reference
+  - `*_corrected.gtf` / `*_corrected.fasta`: SQANTI3-corrected transcript models
+- `transcriptome/sqanti3/filter/`
+  - `*_classification.txt`, `*.gtf`: Filtered classification and GTF with artifacts removed (ML or rules-based, see `--sqanti3_filter_type`)
+- `transcriptome/sqanti3/final_transcriptome/`
+  - `*.gtf`: Final curated GTF after rescuing discarded reference-matching transcripts
+- `transcriptome/sqanti3/final_qc/`
+  - `*_classification.txt`: SQANTI3 classification of the final rescued transcriptome (for reporting)
+
+</details>
+
+[SQANTI3](https://github.com/ConesaLab/SQANTI3) curates the merged, reannotated transcriptome by classifying each isoform against the reference, filtering out likely artifacts (`--sqanti3_filter_type ml` or `rules`), and rescuing discarded transcripts that match reference annotations. Use `--skip_sqanti3` to skip curation and use the reannotated GTF directly, or `--skip_union_assembly` to skip the union merge step across assemblers.
 
 ### QC
 
