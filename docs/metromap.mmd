@@ -1,0 +1,127 @@
+%%metro title: ProteomeGenerator3
+%%metro style: dark
+%%metro files: bam_in | BAM/CRAM
+%%metro files: fusion_in | Fusion TSV
+%%metro file: proteome_out | proteins.fasta
+%%metro file: report_out | MultiQC Report
+%%metro line: bambu | Bambu | #2196F3
+%%metro line: lraa | LRAA | #2db572
+%%metro line: stie | StringTie2 | #f5a623
+%%metro line: fusion | Fusions (optional) | #e63946 | dashed
+%%metro legend: br
+
+%%metro grid: preprocess | 0,0
+%%metro grid: assembly | 1,0
+%%metro grid: curation | 2,0
+%%metro grid: orf_pred | 3,0
+%%metro grid: proteome | 2,1
+%%metro grid: qc_report | 0,1
+
+graph LR
+
+    subgraph preprocess [Pre-processing]
+        %%metro exit: right | bambu, lraa, stie
+        bam_in[ ]
+        cram_to_bam[CRAM_TO_BAM]
+        samtools_faidx[SAMTOOLS_FAIDX]
+        samtools_sort_idx[SAMTOOLS\nSORT/INDEX]
+        filter_reads[FILTER_READS]
+        bambu_rc[BAMBU_READCLASSES]
+
+        bam_in -->|bambu,lraa,stie| cram_to_bam
+        cram_to_bam -->|bambu,lraa,stie| samtools_faidx
+        samtools_faidx -->|bambu,lraa,stie| samtools_sort_idx
+        samtools_sort_idx -->|bambu,lraa,stie| filter_reads
+        filter_reads -->|bambu| bambu_rc
+    end
+
+    subgraph assembly [Transcript Assembly]
+        %%metro entry: left | bambu, lraa, stie
+        %%metro exit: right | bambu, lraa, stie
+        bambu_asm[BAMBU]
+        lraa_asm[LRAA]
+        stie_asm[STRINGTIE2]
+    end
+
+    subgraph curation [GTF Merge & Curation]
+        %%metro entry: left | bambu, lraa, stie
+        %%metro exit: right | bambu, lraa, stie
+        union_merge[LRAA_MERGE\n(union)]
+        gffcompare_cur[GFFCOMPARE]
+        reannotategtf[REANNOTATEGTF]
+        sqanti3_qc[SQANTI3 QC]
+        sqanti3_filter[SQANTI3 FILTER]
+        sqanti3_rescue[SQANTI3 RESCUE]
+
+        union_merge -->|bambu,lraa,stie| gffcompare_cur
+        gffcompare_cur -->|bambu,lraa,stie| reannotategtf
+        reannotategtf -->|bambu,lraa,stie| sqanti3_qc
+        sqanti3_qc -->|bambu,lraa,stie| sqanti3_filter
+        sqanti3_filter -->|bambu,lraa,stie| sqanti3_rescue
+    end
+
+    subgraph orf_pred [ORF Prediction]
+        %%metro entry: left | bambu, lraa, stie
+        %%metro exit: bottom | bambu, lraa, stie
+        gffread[GFFREAD]
+        philosopher_db[PHILOSOPHER\nDATABASE]
+        diamond_makedb[DIAMOND\nMAKEDB]
+        td_longorf[TRANSDECODER\nLONGORF]
+        diamond_blast[DIAMOND\nBLASTP]
+        td_predict[TRANSDECODER\nPREDICT]
+
+        gffread -->|bambu,lraa,stie| td_longorf
+        philosopher_db -->|bambu,lraa,stie| diamond_makedb
+        diamond_makedb -->|bambu,lraa,stie| diamond_blast
+        td_longorf -->|bambu,lraa,stie| diamond_blast
+        diamond_blast -->|bambu,lraa,stie| td_predict
+    end
+
+    subgraph proteome [Proteome Assembly]
+        %%metro direction: RL
+        %%metro entry: right | bambu, lraa, stie
+        %%metro exit: left | bambu, lraa, stie, fusion
+        %%metro off_track: proteome_out
+        fusion_in[ ]
+        td2fasta[TRANSDECODER2FASTA]
+        fusionfasta[FUSIONFASTA]
+        cat_cat[CAT_CAT]
+        seqkit_rmdup[SEQKIT_RMDUP]
+        proteome_out[ ]
+
+        fusion_in -->|fusion| fusionfasta
+        fusionfasta -->|fusion| cat_cat
+        td2fasta -->|bambu,lraa,stie| cat_cat
+        cat_cat -->|bambu,lraa,stie,fusion| seqkit_rmdup
+        seqkit_rmdup -->|bambu,lraa,stie,fusion| proteome_out
+    end
+
+    subgraph qc_report [Quality Control & Reporting]
+        %%metro direction: RL
+        %%metro entry: right | bambu, lraa, stie, fusion
+        nanoplot[NanoPlot]
+        samtools_stats[SAMTOOLS\nSTATS]
+        rseqc[RSeQC]
+        picard[PICARD]
+        seqkit_stats[SEQKIT\nSTATS]
+        multiqc[MultiQC]
+        report_out[ ]
+
+        nanoplot -->|bambu,lraa,stie,fusion| samtools_stats
+        samtools_stats -->|bambu,lraa,stie,fusion| rseqc
+        rseqc -->|bambu,lraa,stie,fusion| picard
+        picard -->|bambu,lraa,stie,fusion| seqkit_stats
+        seqkit_stats -->|bambu,lraa,stie,fusion| multiqc
+        multiqc -->|bambu,lraa,stie,fusion| report_out
+    end
+
+    %% Inter-section edges
+    filter_reads -->|lraa| lraa_asm
+    filter_reads -->|stie| stie_asm
+    bambu_rc -->|bambu| bambu_asm
+    bambu_asm -->|bambu| union_merge
+    lraa_asm -->|lraa| union_merge
+    stie_asm -->|stie| union_merge
+    sqanti3_rescue -->|bambu,lraa,stie| gffread
+    td_predict -->|bambu,lraa,stie| td2fasta
+    seqkit_rmdup -->|bambu,lraa,stie,fusion| nanoplot

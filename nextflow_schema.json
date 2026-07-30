@@ -262,6 +262,17 @@
                 "qc_only": {
                     "type": "boolean",
                     "description": "Run only read filtering and QC (skip assembly and ORF prediction)"
+                },
+                "skip_sqanti3": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Skip SQANTI3 QC/filter/rescue transcriptome curation. Uses reannotated GTF directly."
+                },
+                "sqanti3_filter_type": {
+                    "type": "string",
+                    "default": "ml",
+                    "enum": ["ml", "rules"],
+                    "description": "SQANTI3 filter strategy: 'ml' (machine learning) or 'rules' (rules-based)."
                 }
             }
         },
@@ -276,10 +287,6 @@
                     "default": "bambu",
                     "pattern": "^(bambu|lraa|stringtie)(,(bambu|lraa|stringtie))*$",
                     "description": "Long-read transcript assembler(s) to use. Comma-separated for multiple (e.g. 'bambu,lraa,stringtie')."
-                },
-                "skip_multisample": {
-                    "type": "boolean",
-                    "description": "skip multisample transcript assembly and proteome"
                 }
             }
         },
@@ -320,6 +327,11 @@
             "description": "ORF prediction parameters",
             "default": "",
             "properties": {
+                "skip_orfs": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Skip ORF prediction (Transdecoder) and produce only assembled transcriptome GTF"
+                },
                 "single_best_only": {
                     "type": "boolean",
                     "description": "just include single best ORF per transcript"
@@ -375,6 +387,26 @@
                     "description": "if merging across samples, min TPM for detected transcript"
                 }
             }
+        },
+        "multi_sample_analysis": {
+            "title": "multi-sample analysis",
+            "type": "object",
+            "description": "options for multi-sample analysis",
+            "default": "",
+            "properties": {
+                "skip_multisample": {
+                    "type": "boolean",
+                    "description": "skip multisample transcript assembly and proteome"
+                },
+                "skip_union_assembly": {
+                    "type": "boolean",
+                    "description": "skip union assembly merge across assemblers (LRAA_MERGE)"
+                },
+                "include_single_exons": {
+                    "type": "boolean",
+                    "description": "include single exons in merged gtf"
+                }
+            }
         }
     },
     "allOf": [
@@ -404,6 +436,9 @@
         },
         {
             "$ref": "#/$defs/short_read_rnaseq_options"
+        },
+        {
+            "$ref": "#/$defs/multi_sample_analysis"
         }
     ],
     "properties": {

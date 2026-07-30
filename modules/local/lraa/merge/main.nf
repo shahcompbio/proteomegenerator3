@@ -4,7 +4,7 @@ process LRAA_MERGE {
     label 'process_medium'
 
     conda "${moduleDir}/environment.yml"
-    container "us-central1-docker.pkg.dev/methods-dev-lab/lraa/lraa:0.16.1"
+    container "us-central1-docker.pkg.dev/methods-dev-lab/lraa/lraa:0.17.5"
 
     input:
     tuple val(meta), path(gtfs, stageAs: 'sample_gtfs/*')
@@ -22,6 +22,11 @@ process LRAA_MERGE {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
+    # Filter out unstranded transcripts (strand ".") that LRAA merge cannot handle
+    for gtf in sample_gtfs/*.gtf; do
+        awk -F'\\t' '\$7 == "+" || \$7 == "-"' "\$gtf" > "\$gtf.tmp" && mv "\$gtf.tmp" "\$gtf"
+    done
+
     merge_LRAA_GTFs.py \\
         --genome ${ref_genome} \\
         --gtf sample_gtfs/*.gtf \\

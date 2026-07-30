@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Basic execution:
 
 ```bash
-nextflow run kentsislab/proteomegenerator3 -r 1.3.1 \
+nextflow run kentsislab/proteomegenerator3 -r 1.3.2 \
   -profile <docker/singularity/.../institute> \
   --input samplesheet.csv \
   --fasta <REF_GENOME> \
@@ -85,7 +85,7 @@ nextflow run . -profile docker -resume
    - **BAM_ASSEMBLY_BAMBU**: Runs Bambu for transcript assembly and quantification
    - **BAM_ASSEMBLY_LRAA**: Runs LRAA for transcript assembly (alternative assembler)
    - **BAM_ASSEMBLY_STRINGTIE**: Runs StringTie for transcript assembly (alternative assembler)
-   - **GTF_MERGE_ANNOTATE**: Merges assemblies across multiple assemblers (when multiple assemblers selected)
+   - **GTF_MERGE_SQANTI**: Merges assemblies (if multiple assemblers), reannotates, and curates transcriptome with SQANTI3 QC/Filter/Rescue
    - **GFFREAD**: Extracts cDNA sequences from assembled transcripts
    - **CAT_CAT**: Concatenates transcript and fusion FASTA files (when fusions enabled)
    - **PREDICT_ORFS**: Predicts ORFs using Transdecoder
@@ -98,7 +98,7 @@ nextflow run . -profile docker -resume
    - `bam_assembly_bambu/`: Transcript assembly with Bambu
    - `bam_assembly_lraa/`: Transcript assembly with LRAA
    - `bam_assembly_stringtie/`: Transcript assembly with StringTie
-   - `gtf_merge_annotate/`: Merge and reannotate GTFs across assemblers
+   - `gtf_merge_sqanti/`: Merge, reannotate, and curate GTFs with SQANTI3 (QC → Filter → Rescue)
    - `predict_orfs/`: ORF prediction with Transdecoder and FASTA formatting
 
 4. **Python Scripts** (in `bin/`):
@@ -167,6 +167,11 @@ When `--fusions` is enabled, the workflow:
 - `--NDR`: Novel discovery rate (default: 0.1)
 - `--yieldsize`: Reads to process at once for memory management (default: 100000)
 - `--skip_multisample`: Skip multi-sample transcript merging
+
+**Transcriptome Curation (SQANTI3)**:
+
+- `--skip_sqanti3`: Skip SQANTI3 QC/filter/rescue (default: false)
+- `--sqanti3_filter_type`: Filter strategy — `'ml'` (machine learning) or `'rules'` (default: 'ml')
 
 **ORF Prediction**:
 

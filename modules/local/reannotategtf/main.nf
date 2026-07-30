@@ -5,7 +5,7 @@ process REANNOTATEGTF {
     label 'process_single'
 
     conda "${moduleDir}/environment.yml"
-    container "quay.io/shahlab_singularity/biopython:v250501"
+    container "quay.io/shahlab_singularity/reannotate_gtf:260605_1.0.1"
 
     input:
     tuple val(meta), path(annotated_gtf)
@@ -23,7 +23,7 @@ process REANNOTATEGTF {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    reannotate_gtf.py \\
+    reannotate_gtf \\
         ${args} \\
         --mapping ${prefix}.id_mapping.tsv \\
         --reference_fai ${ref_fai} \\
@@ -32,10 +32,7 @@ process REANNOTATEGTF {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        python: \$(python --version | sed 's/Python //g')
-        pandas: \$(python -c "import pandas; print(pandas.__version__)")
-        polars: \$(python -c "import polars; print(polars.__version__)")
-        gtfparse: \$(python -c "import gtfparse; print(gtfparse.__version__)")
+        reannotate_gtf: \$(reannotate_gtf --version 2>&1 || echo "1.0.1")
     END_VERSIONS
     """
 
@@ -48,10 +45,7 @@ process REANNOTATEGTF {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        python: \$(python --version | sed 's/Python //g')
-        pandas: \$(python -c "import pandas; print(pandas.__version__)")
-        polars: \$(python -c "import polars; print(polars.__version__)")
-        gtfparse: \$(python -c "import gtfparse; print(gtfparse.__version__)")
+        reannotate_gtf: "1.0.1"
     END_VERSIONS
     """
 }

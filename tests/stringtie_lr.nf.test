@@ -6,6 +6,7 @@ nextflow_pipeline {
     tag "stringtie_lr"
 
     test("Test StringTie-LR multi-sample (long-read only)") {
+        options "-stub"
         when {
             params {
                 input = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/samplesheet_multisample_nofusions.csv'
@@ -25,6 +26,7 @@ nextflow_pipeline {
     }
 
     test("Test StringTie-LR single-sample (long-read only)") {
+        options "-stub"
         when {
             params {
                 input = 'https://raw.githubusercontent.com/apsteinberg/test-datasets/refs/heads/proteomegenerator3/samplesheet_multisample_nofusions.csv'

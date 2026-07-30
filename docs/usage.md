@@ -89,6 +89,22 @@ By default, if multiple GTFs are provided, they are merged into a cohort-level t
 > [!NOTE]
 > Bambu-specific parameters (`--NDR`, `--recommended_NDR`, `--skip_preprocessing`) only apply when `--long_read_assembler bambu` is selected.
 
+## Transcriptome curation (SQANTI3)
+
+By default, the merged and reannotated transcriptome is curated with [SQANTI3](https://github.com/ConesaLab/SQANTI3): isoforms are classified against the reference, likely artifacts are filtered out, and discarded transcripts that match reference annotations are rescued back in.
+
+```bash
+nextflow run kentsislab/proteomegenerator3 \
+   -profile docker \
+   --input samplesheet.csv \
+   --fasta <REF_GENOME> \
+   --gtf <REF_GTF> \
+   --outdir results \
+   --sqanti3_filter_type rules
+```
+
+Use `--sqanti3_filter_type` to choose the SQANTI3 filter strategy: `'ml'` (machine learning, default) or `'rules'`. Use `--skip_sqanti3` to skip curation entirely and use the reannotated GTF directly, or `--skip_union_assembly` to skip the union merge step across assemblers.
+
 ## QC-only mode
 
 To run only read filtering and quality control without proceeding to transcript assembly or ORF prediction, use the `--qc_only` flag. This is useful for evaluating data quality before committing to a full pipeline run.
@@ -163,7 +179,7 @@ nextflow pull kentsislab/proteomegenerator3
 
 It is a good idea to specify the pipeline version when running the pipeline on your data. This ensures that a specific version of the pipeline code and software are used when you run your pipeline. If you keep using the same tag, you'll be running the same version of the pipeline, even if there have been changes to the code since.
 
-First, go to the [kentsislab/proteomegenerator3 releases page](https://github.com/kentsislab/proteomegenerator3/releases) and find the latest pipeline version - numeric only (eg. `1.3.1`). Then specify this when running the pipeline with `-r` (one hyphen) - eg. `-r 1.3.1`. Of course, you can switch to another version by changing the number after the `-r` flag.
+First, go to the [kentsislab/proteomegenerator3 releases page](https://github.com/kentsislab/proteomegenerator3/releases) and find the latest pipeline version - numeric only (eg. `1.3.2`). Then specify this when running the pipeline with `-r` (one hyphen) - eg. `-r 1.3.2`. Of course, you can switch to another version by changing the number after the `-r` flag.
 
 This version number will be logged in reports when you run the pipeline, so that you'll know what you used when you look back in the future. For example, at the bottom of the MultiQC reports.
 

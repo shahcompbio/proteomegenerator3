@@ -28,6 +28,14 @@ indent_style = unset
 [/assets/email*]
 indent_size = unset
 
+# Go uses tabs by convention (enforced by gofmt)
+[*.go]
+indent_style = tab
+
+# Makefiles require tabs for recipe lines
+[Makefile]
+indent_style = tab
+
 # ignore python and markdown
 [*.{py,md,R}]
 indent_style = unset

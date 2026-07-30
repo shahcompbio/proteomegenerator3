@@ -5,6 +5,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-07-29
+
+### Added
+
+- SQANTI3 QC/Filter/Rescue transcriptome curation via new `GTF_MERGE_SQANTI` subworkflow (replaces `GTF_MERGE_ANNOTATE`), classifying isoforms against the reference, removing ML- or rules-flagged artifacts, and rescuing discarded transcripts that match reference annotations
+- CLI parameter `--skip_sqanti3` to skip SQANTI3 curation and use the reannotated GTF directly (default: false)
+- CLI parameter `--sqanti3_filter_type` to select SQANTI3 filter strategy: `'ml'` (machine learning, default) or `'rules'`
+- CLI parameter `--skip_union_assembly` to skip the LRAA_MERGE union step across assemblers
+- CLI parameter `--skip_orfs` to stop after transcript assembly and produce only the assembled GTF, skipping ORF prediction
+- Final SQANTI3 QC pass on the rescued transcriptome for reporting
+- `docker/sqanti3/Dockerfile` custom image (adds `RColorConesa` and fixes timezone for the SQANTI3 filter report)
+- nf-metro pipeline diagram (`docs/metromap.svg`) embedded in the README introduction
+
+### Changed
+
+- Renamed `GTF_MERGE_ANNOTATE` subworkflow to `GTF_MERGE_SQANTI`; merge/reannotate steps now feed into SQANTI3 curation
+- LRAA_MERGE now filters out unstranded transcripts before merging, since LRAA merge cannot handle them
+- Rewrote `reannotate_gtf.py` in Go (`reannotate_gtf.go`) for ~2700x speedup on large cohort GTFs. Validated against Python version on a 1000-transcript subset (identical logic: same exact-match ENST/ENSG assignments, same novel gene counts, same class_code distributions). Tested on full 821K-transcript SarcAtlas cohort GTF (921MB) in 12s vs estimated ~9h in Python.
+- Bumped `reannotate_gtf` to 1.0.1
+
+### Removed
+
+- `GTF_MERGE_ANNOTATE` subworkflow and its LRAA/SQANTI wrapper modules, superseded by `GTF_MERGE_SQANTI`
+
+### Fixed
+
+- StringTie merge and gene prediction (`gtfToGenePred`) fixes for SQANTI3 compatibility
+- Race condition in SQANTI3 QC when running across multiple samples
+- Single-sample vs multi-sample handling in the SQANTI3 curation path
+- R timezone error in the SQANTI3 filter report
+
 ## [1.3.1] - 2026-05-16
 
 ### Added

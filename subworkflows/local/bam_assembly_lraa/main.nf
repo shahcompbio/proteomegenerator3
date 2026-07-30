@@ -6,7 +6,6 @@ include { LRAA_ASSEMBLY   } from '../../../modules/local/lraa/assembly/main'
 include { LRAA_MERGE      } from '../../../modules/local/lraa/merge/main'
 include { LRAA_QUANT      } from '../../../modules/local/lraa/quant/main'
 include { LRAA_QUANTMERGE } from '../../../modules/local/lraa/quantmerge/main'
-include { LRAA_SQANTI     } from '../../../modules/local/lraa/sqanti/main'
 include { GFFCOMPARE      } from '../../../modules/nf-core/gffcompare/main'
 include { REANNOTATEGTF   } from '../../../modules/local/reannotategtf/main'
 
@@ -47,13 +46,6 @@ workflow BAM_ASSEMBLY_LRAA {
         REANNOTATEGTF(GFFCOMPARE.out.annotated_gtf, ref_fai)
         ch_versions = ch_versions.mix(REANNOTATEGTF.out.versions)
         lraa_out_ch = REANNOTATEGTF.out.gtf
-
-        // Classify reannotated isoforms with SQANTI-like categories
-        LRAA_SQANTI(
-            REANNOTATEGTF.out.gtf,
-            ref_gtf,
-        )
-        ch_versions = ch_versions.mix(LRAA_SQANTI.out.versions)
     }
     else {
         // Multi-sample: merge → reannotate → re-quant → matrix assembly
@@ -76,13 +68,6 @@ workflow BAM_ASSEMBLY_LRAA {
         ch_versions = ch_versions.mix(REANNOTATEGTF.out.versions)
         lraa_out_ch = REANNOTATEGTF.out.gtf
 
-        // Classify reannotated isoforms with SQANTI-like categories
-        LRAA_SQANTI(
-            REANNOTATEGTF.out.gtf,
-            ref_gtf,
-        )
-        ch_versions = ch_versions.mix(LRAA_SQANTI.out.versions)
-
         // Re-quantify each sample against the reannotated cohort GTF
         quant_input = bam_ch.combine(
             REANNOTATEGTF.out.gtf.map { _meta, gtf -> gtf }
@@ -103,6 +88,4 @@ workflow BAM_ASSEMBLY_LRAA {
     versions       = ch_versions
     gtf            = lraa_out_ch // channel: [ val(meta), path(gtf) ]
     quant_matrix   = skip_multisample || sample_count == 1 ? Channel.empty() : LRAA_QUANTMERGE.out.matrix // optional
-    sqanti_summary = LRAA_SQANTI.out.summary // channel: [ val(meta), path(tsv) ]
-    sqanti_plot    = LRAA_SQANTI.out.plot // channel: [ val(meta), path(pdf) ]
 }
