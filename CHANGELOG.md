@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `BAMBU_FILTER` now passes `--merge=TRUE` in multisample mode. The flag was gated on `meta.id == "merge"`, but `BAM_ASSEMBLY_BAMBU` relabels the merged summarized experiment to `cohort` before `SEMERGE` (so `groupTuple` collapses all samples), so the flag was never set. `bambu_filter.R` then took the single-sample subsetting branch, which is a 2-D logical subscript once `fullLengthCounts` has more than one column, and aborted with `Error: array-like subscript has more than one effective dimension` on any cohort of more than one sample
+
 ## [1.3.2] - 2026-07-29
 
 ### Added
