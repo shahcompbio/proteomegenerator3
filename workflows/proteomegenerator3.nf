@@ -190,7 +190,16 @@ workflow PROTEOMEGENERATOR3 {
             //
             // Annotate and curate assembly GTFs (merge if multiple assemblers, then SQANTI3)
             //
-            GTF_MERGE_SQANTI(assembly_ch, params.gtf, ref_fai, params.fasta, params.skip_sqanti3, params.skip_union_assembly)
+            // The union path exists to merge across assemblers. With a single assembler
+            // there is nothing to merge, and its GFFCOMPARE/REANNOTATEGTF pass re-annotates
+            // an already-annotated GTF -- which drops reference gene IDs, because gffcompare
+            // only emits ref_gene_id when the assembler's gene_id disagrees with the
+            // reference. Assembler GTFs are already reference-annotated on arrival (bambu
+            // natively; LRAA and StringTie via REANNOTATEGTF in their own subworkflows).
+            def n_tools = params.long_read_assembler.split(',').size() + (params.short_reads ? 1 : 0)
+            def skip_union = params.skip_union_assembly || n_tools == 1
+
+            GTF_MERGE_SQANTI(assembly_ch, params.gtf, ref_fai, params.fasta, params.skip_sqanti3, skip_union)
             ch_versions = ch_versions.mix(GTF_MERGE_SQANTI.out.versions)
             downstream_gtf_ch = GTF_MERGE_SQANTI.out.gtf
         }
