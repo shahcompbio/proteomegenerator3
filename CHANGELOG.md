@@ -5,8 +5,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- nf-test `union_single_assembler.nf.test` asserting the union reannotation pass runs for multiple assemblers and not for one. Keyed on the published `*.union.reannotated.gtf` marker rather than `workflow.success`, which the bug below satisfied
+
 ### Fixed
 
+- The union assembly path is now skipped when only one assembler is selected. `GTF_MERGE_SQANTI` ran `GFFCOMPARE` and `REANNOTATEGTF` on every GTF, including the single-assembler passthrough that `LRAA_MERGE` correctly skipped. That pass re-annotated an already-annotated GTF, and `gffcompare` only emits `ref_gene_id` when the assembler's `gene_id` disagrees with the reference gene it matched — so once a GTF carried reference `ENSG` IDs, `gffcompare` stayed silent and `reannotate_gtf` fell back to minting `NovelGene<N>`. On a bambu cohort run this replaced 37,781 of 37,815 gene IDs with placeholders, 37,378 of them on reference `ENST` transcripts, which propagated into the proteome FASTA as `GN=NovelGene<N>`. Every GTF reaching `assembly_ch` is already reference-annotated (bambu natively; LRAA and StringTie via `REANNOTATEGTF` in their own subworkflows), so the union pass is only ever correct for the `LRAA_MERGE` output. Affected any single-assembler run, not just bambu
 - `BAMBU_FILTER` now passes `--merge=TRUE` in multisample mode. The flag was gated on `meta.id == "merge"`, but `BAM_ASSEMBLY_BAMBU` relabels the merged summarized experiment to `cohort` before `SEMERGE` (so `groupTuple` collapses all samples), so the flag was never set. `bambu_filter.R` then took the single-sample subsetting branch, which is a 2-D logical subscript once `fullLengthCounts` has more than one column, and aborted with `Error: array-like subscript has more than one effective dimension` on any cohort of more than one sample
 
 ## [1.3.2] - 2026-07-29
