@@ -135,6 +135,11 @@ grouped = df.groupby("transcript_id")
 i = 1
 # track transcript ids to check for duplicates
 tx_ids = set()
+## Novel gene IDs are keyed on the INPUT locus -- the assembler's own gene_id, passed
+## through by gffcompare -- so that every isoform of one novel locus shares a gene_id.
+## Keying on the per-transcript counter `i` instead mints a distinct gene per transcript
+## and destroys the locus grouping the assemblers produced.
+novel_gene_ids = {}
 for transcript_id, group_df in grouped:
     old_gene_id = list(group_df["gene_id"])[0]
     ## rename gene
@@ -142,7 +147,12 @@ for transcript_id, group_df in grouped:
     if not ref_gene == "":
         group_df["gene_id"] = ref_gene
     else:
-        group_df["gene_id"] = "%s%d" % (gene_prefix, i)
+        if old_gene_id not in novel_gene_ids:
+            novel_gene_ids[old_gene_id] = "%s%d" % (
+                gene_prefix,
+                len(novel_gene_ids) + 1,
+            )
+        group_df["gene_id"] = novel_gene_ids[old_gene_id]
     ### rename transcripts so exact matches are given known ids and those which are not
     ### are given a tool-specific novel id
     class_code = list(group_df["class_code"])[0]
