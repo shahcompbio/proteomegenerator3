@@ -174,6 +174,11 @@ func main() {
 	outputIndices := make([]int, 0, len(records))
 
 	counter := 1
+	// Novel gene IDs are keyed on the INPUT locus -- the assembler's own gene_id, passed
+	// through by gffcompare -- so that every isoform of one novel locus shares a gene_id.
+	// Keying on the per-transcript `counter` instead mints a distinct gene per transcript
+	// and destroys the locus grouping the assemblers produced.
+	novelGeneIDs := make(map[string]string)
 	for _, txID := range groupOrder {
 		g := groupMap[txID]
 		recIndices := g.records
@@ -190,7 +195,10 @@ func main() {
 		if refGene != "" {
 			newGeneID = refGene
 		} else {
-			newGeneID = fmt.Sprintf("%s%d", genePrefix, counter)
+			if _, seen := novelGeneIDs[oldGeneID]; !seen {
+				novelGeneIDs[oldGeneID] = fmt.Sprintf("%s%d", genePrefix, len(novelGeneIDs)+1)
+			}
+			newGeneID = novelGeneIDs[oldGeneID]
 		}
 
 		// Determine new transcript ID.
