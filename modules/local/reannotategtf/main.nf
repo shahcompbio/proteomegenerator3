@@ -5,7 +5,7 @@ process REANNOTATEGTF {
     label 'process_single'
 
     conda "${moduleDir}/environment.yml"
-    container "quay.io/shahlab_singularity/reannotate_gtf:260605_1.0.1"
+    container "quay.io/shahlab_singularity/reannotate_gtf:260904_1.0.2"
 
     input:
     tuple val(meta), path(annotated_gtf)

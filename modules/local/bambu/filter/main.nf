@@ -19,7 +19,8 @@ process BAMBU_FILTER {
     script:
     def args = task.ext.args ?: ''
     prefix = task.ext.prefix ?: "${meta.id}"
-    def merge_args = meta.id == "merge" ? "--merge=TRUE" : ""
+    // multisample SEs are relabelled `cohort` by BAM_ASSEMBLY_BAMBU before SEMERGE
+    def merge_args = meta.id == "cohort" ? "--merge=TRUE" : ""
     """
     bambu_filter.R --se=${se} --out_gtf=${prefix}.gtf ${args} ${merge_args}
     cat <<-END_VERSIONS > versions.yml
